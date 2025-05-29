@@ -1,0 +1,217 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    text-decoration: none;
+    border: none;
+    color: #000;
+    font-family: "nunito", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 200;
+    font-style: normal;
+}
+
+:root {
+    --color-primary: #344e41;
+    --color-secondary: #5B4634;
+    --color-tertiary: #000;
+    --color-quaternary: #000;
+    --color-box-border: #ced4da;
+    --color-icon-default: #6c757d;
+    --color-border: #6c757d;
+
+    --color-white: #f8f9fa;
+    --color-dark-text: #f8f9fa;
+    --color-light-text: #495057;
+    --color-default: #0d6efd;
+    --color-danger: #dc3545;
+    --color-success: #198754;
+    --color-warning:  #ffc107;
+    --color-info:    #0dcaf0;
+
+    --color-indigo:  #6610f2;
+    --color-purple:  #6f42c1;
+    --color-pink:    #d63384;
+    --color-orange:  #fd7e14;
+    --color-teal:    #20c997;
+
+    --input-border-radius: 3px;
+}
+
+html {
+    font-size: 62.5%;
+    overflow-x: hidden;
+}
+
+/* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
+/* ------------------------------------------- header ------------------------------------------ */
+
+header {
+    /* height: 10vh; */
+
+    border: 1px solid red;
+
+}
+
+#menus {
+    display: flex;
+    flex-direction: row;
+    justify-content: left;
+    align-content: center;
+    align-items: center;
+    padding: 1rem;
+
+    /* border: 1px solid red; */
+}
+
+#menu-icon {
+    font-size: 2rem;
+    color: #000;
+    cursor: pointer;
+}
+
+#logo {
+    margin-left: 1rem;
+    margin-right: 5rem;
+}
+
+#logo img {
+    height: 10rem;
+    margin: 0 auto;
+    border-radius: 3px;
+    background-color: #fff;
+    text-align: center;
+    align-content: center;
+}
+
+/* ------------------------------------------- container ------------------------------------------ */
+.container {
+    width: 120rem;
+    height: auto;
+    margin: 0 auto;
+    border: 1px solid green;
+}
+
+/* ------------------------------------------- error ---------------------------------------------- */
+#error {
+    border: 1px solid var(--color-danger);
+    color: var(--color-danger);
+    padding: 3rem;
+    margin-bottom: 1rem;
+    font-size: 2rem;
+    font-weight: bold;
+    text-align: center;
+}
+
+/* ------------------------------------------- form ----------------------------------------------- */
+.form-input {
+    margin-bottom: 2rem;
+}
+
+/* ------------------------------------------- footer --------------------------------------------- */
+
+footer {
+    display: grid;
+    grid-template-columns: 3fr 1fr;
+    height: auto;
+    align-content: center;
+    font-size: 1.3rem;
+    padding: 1rem;
+    padding-top: 3rem;
+}
+
+footer .copyright {
+    align-content: center;
+}
+
+footer .compliance {
+    display: flex;
+    flex-direction: row;
+    gap: 2rem;
+}
+
+footer .compliant:hover,
+footer .legal:hover {
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+
+/* ------------------------------------------- boxes --------------------------------------------- */
+#boxes {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 1rem;
+
+    
+    justify-content: center;
+    padding: 1rem;
+    width: 100%;
+
+    border: 1px solid yellow;
+}
+
+/* ------------------------------------------- box --------------------------------------------- */
+.box {
+    position: relative;
+
+    /* height: 5rem; */
+    width: 15rem;
+    padding-top: 2rem;
+    border: 1px solid var(--color-border);
+}
+
+.day {
+    position: absolute;
+
+    padding: .5rem;
+
+    color: var(--color-white);
+    background: var(--color-primary);
+
+    font-weight: 400;
+    border-radius: 3px;
+
+    top: -5px;
+    left: 2px;
+}
+
+.readings {
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+
+    padding: 1rem;
+}
+
+.reading {
+    display: flex;
+    flex-direction: row;
+    gap: .3rem;
+}
+
+.reading i {
+    font-size: .7rem;
+    color: var(--color-default);
+}
+
+.new_testament_book {
+    color: var(--color-info);
+}
+
+.chapter {
+    cursor: pointer;
+}
+/* ------------------------------------------- form ----------------------------------------------- */

@@ -6,37 +6,50 @@
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bible Programm</title>
-    <link rel="shortcut icon" href="../../favicon.ico" type="image/x-icon">
-    <link rel="stylesheet" href="../../assets/css/fontawesome/css/fontawesome.css">
-    <link rel="stylesheet" href="../../assets/css/fontawesome/css/brands.css">
-    <link rel="stylesheet" href="../../assets/css/fontawesome/css/solid.css">
+    <link rel="shortcut icon" href="./favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="./assets/css/fontawesome/css/fontawesome.css">
+    <link rel="stylesheet" href="./assets/css/fontawesome/css/brands.css">
+    <link rel="stylesheet" href="./assets/css/fontawesome/css/solid.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./resources/css/index.css">
+    <style>
+        body { font-family: sans-serif; background: #FAF0D7; padding: 20px; }
+        h1 { color: #1C3A2E; }
+        .verse-box { background: #fff; border-radius: 8px; padding: 15px; margin-bottom: 20px; box-shadow: 0 0 5px rgba(0,0,0,0.1); }
+        .themes { margin-top: 10px; }
+        label { margin-right: 15px; }
+        button { background: #CE5A29; color: white; border: none; padding: 10px 20px; border-radius: 20px; cursor: pointer; margin-top: 10px; }
+        select { margin: 10px; padding: 5px; }
+        .tagged { background-color: #f5fff0; border-left: 6px solid #69A937; }
+    </style>
 </head>
 
 <body>
+  <h1>Lissen – Ajout manuel des thèmes</h1>
+  <div>
+    <label>Testament :</label>
+    <select id="testamentSelect">
+      <option value="">-- Choisir --</option>
+    </select>
 
-    <header>
-        <div id="menus">
-            <div class="menu"><i class="fa-solid fa-bars" id="menu-icon"></i></div>
-    
-            <div id="logo"><img src="../../resources/img/logo.png" alt="" srcset=""></div>
-        </div>
-    </header>
+    <label>Livre :</label>
+    <select id="bookSelect">
+      <option value="">-- Choisir --</option>
+    </select>
 
-    <div id="body">
-        <div class="container">
-            <div id="boxes">
-            </div>
-        </div>
-    </div>
+    <label>Chapitre :</label>
+    <select id="chapterSelect">
+      <option value="">-- Choisir --</option>
+    </select>
+  </div>
 
-    <script type="text/javascript" src="../../assets/js/jquery-3.7.1.min.js"></script>
-    <script type="text/javascript" src="../../assets/js/jquery.mask-1.14.15.min.js"></script>
-    <script type="module"src="./resources/js/index.js"></script>
-</body>
+  <div id="app"></div>
+
+  <!-- Bouton Export JSON -->
+  <button id="btn-export">Exporter les données</button>
+
 <footer>
     <div class="copyright">&copy; Cyrano Conseil 2024</div>
     <div class="compliance">
@@ -44,5 +57,10 @@
         <div class="legal">legal notices</div>
     </div>
 </footer>
+
+    <script type="text/javascript" src="../../assets/js/jquery-3.7.1.min.js"></script>
+    <script type="text/javascript" src="../../assets/js/jquery.mask-1.14.15.min.js"></script>
+    <script type="module"src="./resources/js/index.js"></script>
+</body>
 
 </html>

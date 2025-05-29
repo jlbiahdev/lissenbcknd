@@ -43,6 +43,15 @@ html {
     overflow-x: hidden;
 }
 
+section {
+    margin-bottom: 2rem;
+    border-bottom: 1px solid rebeccapurple;
+}
+
+section .head,
+section .paragraf {
+    margin-bottom: 1rem;
+}
 /* Chrome, Safari, Edge, Opera */
 input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button {
@@ -100,9 +109,33 @@ header {
     width: 120rem;
     height: auto;
     margin: 0 auto;
-    border: 1px solid green;
+    /* border: 1px solid green; */
 }
 
+/* ------------------------------------------- list ------------------------------------------ */
+.list {
+    display: flex;
+    flex-direction: row;
+    gap: 1rem;
+ 
+    justify-content: center;
+
+    /* border: 1px solid green; */
+}
+
+.card {
+    border: 1px solid var(--color-border);
+    border-radius: 2px;
+    width: 10rem;
+}
+
+.card-head {
+    min-height: 3rem;
+}
+
+.card-content {
+    min-height: 10rem;
+}
 /* ------------------------------------------- error ---------------------------------------------- */
 #error {
     border: 1px solid var(--color-danger);
@@ -112,11 +145,6 @@ header {
     font-size: 2rem;
     font-weight: bold;
     text-align: center;
-}
-
-/* ------------------------------------------- form ----------------------------------------------- */
-.form-input {
-    margin-bottom: 2rem;
 }
 
 /* ------------------------------------------- footer --------------------------------------------- */
@@ -146,72 +174,3 @@ footer .legal:hover {
     cursor: pointer;
     text-decoration: underline;
 }
-
-
-/* ------------------------------------------- boxes --------------------------------------------- */
-#boxes {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 1rem;
-
-    
-    justify-content: center;
-    padding: 1rem;
-    width: 100%;
-
-    border: 1px solid yellow;
-}
-
-/* ------------------------------------------- box --------------------------------------------- */
-.box {
-    position: relative;
-
-    /* height: 5rem; */
-    width: 15rem;
-    padding-top: 2rem;
-    border: 1px solid var(--color-border);
-}
-
-.day {
-    position: absolute;
-
-    padding: .5rem;
-
-    color: var(--color-white);
-    background: var(--color-primary);
-
-    font-weight: 400;
-    border-radius: 3px;
-
-    top: -5px;
-    left: 2px;
-}
-
-.readings {
-    display: flex;
-    flex-direction: column;
-    gap: .5rem;
-
-    padding: 1rem;
-}
-
-.reading {
-    display: flex;
-    flex-direction: row;
-    gap: .3rem;
-}
-
-.reading i {
-    font-size: .7rem;
-    color: var(--color-default);
-}
-
-.new_testament_book {
-    color: var(--color-info);
-}
-
-.chapter {
-    cursor: pointer;
-}
-/* ------------------------------------------- form ----------------------------------------------- */

@@ -1,2 +1,2 @@
 # spiritualme
-My Spiritual blog
+Appli qui permet de taguer les versets bibliques par thèmes
