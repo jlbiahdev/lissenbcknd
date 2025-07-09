@@ -1,2 +1,2 @@
-# spiritualme
-Appli qui permet de taguer les versets bibliques par thèmes
+# Lissen Backend
+The backend of the Lissen environment 
