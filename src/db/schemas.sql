@@ -32,3 +32,8 @@ CREATE TABLE meditative_verses (
   verse_approved BOOLEAN DEFAULT FALSE,
   comment_approved BOOLEAN DEFAULT FALSE
 );
+
+-- Table des themes
+CREATE TABLE themes (
+  name TEXT PRIMARY KEY
+);

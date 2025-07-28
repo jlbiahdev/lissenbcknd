@@ -4,6 +4,7 @@ const Book = require("./book.model");
 const Bible = require("./bible.model");
 const Verse = require("./verse.model");
 const MeditativeVerse = require("./meditative_verse.model");
+const Theme = require("./theme.model");
 
 // Associations
 Book.belongsTo(Bible, { foreignKey: 'bibleCode' });
@@ -18,4 +19,5 @@ module.exports = {
   Bible,
   Verse,
   MeditativeVerse,
+  Theme,
 };
