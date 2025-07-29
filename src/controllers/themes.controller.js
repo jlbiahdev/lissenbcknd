@@ -1,5 +1,5 @@
 // controllers/theme.controller.js
-const ThemeService = require('../services/theme.service');
+const ThemeService = require('../services/themes.service');
 
 async function getThemes(req, res) {
   try {

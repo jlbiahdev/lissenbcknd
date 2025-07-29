@@ -1,3 +1,12 @@
+-- 1. Créer le type ENUM s'il n'existe pas
+DO $$
+BEGIN
+  CREATE TYPE enum_books_testament AS ENUM ('old', 'new');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END
+$$;
+
 CREATE TABLE bibles (
   code TEXT PRIMARY KEY NOT NULL,
   name TEXT NOT NULL,
@@ -11,7 +20,7 @@ CREATE TABLE books (
   bible_code TEXT NOT NULL REFERENCES bibles(code),
   code TEXT NOT NULL,
   name TEXT NOT NULL,
-  testament TEXT CHECK (testament IN ('old', 'new')) NOT NULL
+  testament enum_books_testament NOT NULL
 );
 
 -- Table des versets bibliques (par Bible) avec id autoincrémenté

@@ -1,0 +1,504 @@
+{
+  "info": {
+    "_postman_id": "b0cf072e-61da-4f6d-9e0a-123456789abc",
+    "name": "Lissen API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "lissenbcknd",
+    "description": "Postman collection for Lissen API"
+  },
+  "item": [
+    {
+      "name": "Themes",
+      "item": [
+        {
+          "name": "GET /api/themes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseURL}}/api/themes",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3003",
+              "path": [
+                "api",
+                "themes"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/themes",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"demo theme\"\n}"
+            },
+            "url": {
+              "raw": "{{baseURL}}/api/themes",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3003",
+              "path": [
+                "api",
+                "themes"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Bibles",
+      "item": [
+        {
+          "name": "GET /api/bibles/:code/books",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseURL}}/api/bibles/LSG1910/books",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3003",
+              "path": [
+                "api",
+                "bibles",
+                "LSG1910",
+                "books"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/bibles/:code/books/:bookId",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseURL}}/api/bibles/LSG1910/books/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3003",
+              "path": [
+                "api",
+                "bibles",
+                "LSG1910",
+                "books",
+                "1"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Books",
+      "item": [
+        {
+          "name": "GET /api/books/:bookId/verses",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseURL}}/api/books/1/verses",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3003",
+              "path": [
+                "api",
+                "books",
+                "1",
+                "verses"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/books/:bookId/verses/:id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseURL}}/api/books/1/verses/3",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3003",
+              "path": [
+                "api",
+                "books",
+                "1",
+                "verses",
+                "3"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/books/:bookId/:chapterNum/verses",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseURL}}/api/books/1/3/verses",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3003",
+              "path": ["api", "books", "1", "3", "verses"]
+            }
+          }
+        },
+        {
+          "name": "GET /api/books/:bookId/:chapterNum/:verseNum",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseURL}}/api/books/1/3/5",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3003",
+              "path": ["api", "books", "1", "3", "5"]
+            }
+          }
+        },
+        {
+          "name": "GET /api/books/code/:bookCode/:chapterNum/verses",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseURL}}/api/books/code/GEN/1/verses",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3003",
+              "path": [
+                "api",
+                "books",
+                "code",
+                "GEN",
+                "1",
+                "verses"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/books/code/:bookCode/:chapterNum/:verseNum",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseURL}}/api/books/code/GEN/1/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3003",
+              "path": [
+                "api",
+                "books",
+                "code",
+                "GEN",
+                "1",
+                "1"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Meditations",
+      "item": [
+        {
+          "name": "POST /api/meditations/:verseId/toggle",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseURL}}/api/meditations/33/toggle",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3003",
+              "path": [
+                "api",
+                "meditations",
+                "33",
+                "toggle"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/meditations/toggle/:verseId/commentary",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseURL}}/api/meditations/toggle/33/commentary",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3003",
+              "path": [
+                "api",
+                "meditations",
+                "toggle",
+                "33",
+                "commentary"
+              ]
+            }
+          }
+        },
+        {
+          "name": "PUT /api/meditations/:verseId/commentary",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"commentary\": \"Dieu nous parle \u00e0 travers ce verset chaque matin.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseURL}}/api/meditations/33/commentary",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3003",
+              "path": [
+                "api",
+                "meditations",
+                "33",
+                "commentary"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/meditations/:verseId/theme",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"theme\": \"zaza\"\n}"
+            },
+            "url": {
+              "raw": "{{baseURL}}/api/meditations/33/themes",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3003",
+              "path": [
+                "api",
+                "meditations",
+                "33",
+                "themes"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/meditations/:verseId/themes",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"theme\": [\"zaza\", \"zeze\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseURL}}/api/meditations/33/themes",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3003",
+              "path": [
+                "api",
+                "meditations",
+                "33",
+                "themes"
+              ]
+            }
+          }
+        },
+        {
+          "name": "DELETE /api/meditations/:verseId/themes/:theme",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseURL}}/api/meditations/33/themes/zaza",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3003",
+              "path": [
+                "api",
+                "meditations",
+                "33",
+                "themes",
+                "zaza"
+              ]
+            }
+          }
+        },
+        {
+          "name": "DELETE /api/meditations/:verseId/themes/:theme",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseURL}}/api/meditations/33/themes/zeze",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3003",
+              "path": [
+                "api",
+                "meditations",
+                "33",
+                "themes",
+                "zeze"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/meditations/export",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseURL}}/api/meditations/export",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3003",
+              "path": [
+                "api",
+                "meditations",
+                "export"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/meditations/book/:bookId",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3003/api/meditations/book/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3003",
+              "path": [
+                "api",
+                "meditations",
+                "book",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/meditations/book/:bookId/chapter/:chapterNum",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3003/api/meditations/book/1/chapter/2",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3003",
+              "path": [
+                "api",
+                "meditations",
+                "book",
+                "1",
+                "chapter",
+                "2"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/meditations/book/:bookId/chapter/:chapterNum/verse/:verseNum",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3003/api/meditations/book/1/chapter/2/verse/2",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3003",
+              "path": [
+                "api",
+                "meditations",
+                "book",
+                "1",
+                "chapter",
+                "2",
+                "verse",
+                "2"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

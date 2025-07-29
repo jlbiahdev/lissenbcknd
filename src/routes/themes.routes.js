@@ -4,9 +4,9 @@ const router = express.Router();
 const themesController = require('../controllers/themes.controller');
 
 // Liste des thèmes
-router.get('/', themesController.getAllThemes);
+router.get('/', themesController.getThemes);
 
 // Ajouter un thème
-router.post('/', themesController.addTheme);
+router.post('/', themesController.postTheme);
 
 module.exports = router;
