@@ -1,0 +1,12 @@
+.topbar{ position:sticky; top:0; z-index:50; background:var(--card); border-bottom:1px solid var(--border) }
+.topbar-inner{ max-width:1200px; margin:0 auto; padding:10px 16px; display:flex; align-items:center; gap:12px }
+.brand{ font-weight:800; letter-spacing:.2px }
+.spacer{ flex:1 }
+.nav{ display:flex; gap:8px }
+.nav a{ text-decoration:none; color:var(--muted); padding:8px 10px; border-radius:10px }
+.nav a:hover{ background:var(--surface); color:var(--text) }
+.nav a.active{ background:var(--accent); color:#fff }
+
+.page-title{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin:10px 0 14px 0 }
+.page-title h1{ font-size:22px; margin:0 }
+.page-sub{ color:var(--muted); font-size:13px }

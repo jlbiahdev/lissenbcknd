@@ -1,0 +1,17 @@
+.table-wrap{ width:100%; overflow:auto }
+.table{ width:100%; border-collapse:separate; border-spacing:0; font-size:13px }
+.table thead th{ position:sticky; top:0; background:var(--surface); z-index:1; border-bottom:1px solid var(--border); text-align:left }
+.table th, .table td{ padding:12px 12px; border-bottom:1px solid var(--border) }
+.table tbody tr:nth-child(odd){ background:rgba(2, 6, 23, .02) }
+.table tbody tr:hover{ background:rgba(37, 99, 235, .06) }
+.th-btn{ display:flex; align-items:center; gap:6px; border:none; background:transparent; color:inherit; cursor:pointer; font:inherit }
+.chev{ transition: transform .15s ease }
+.sorted.asc .chev{ transform:rotate(180deg) }
+.sorted.desc .chev{ transform:rotate(0deg) }
+.cell-ref{ white-space:nowrap }
+.cell-text{ max-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+
+.pager{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px }
+.page-size{ display:flex; align-items:center; gap:6px }
+.page-indicator{ padding:0 8px; color:var(--muted) }
+.loading,.empty{ padding:20px; text-align:center; color:var(--muted) }

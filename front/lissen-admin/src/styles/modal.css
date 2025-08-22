@@ -1,0 +1,7 @@
+.modal-root{ position:fixed; inset:0; display:grid; place-items:center; z-index:60 }
+.modal-backdrop{ position:absolute; inset:0; background:rgba(0,0,0,.45); backdrop-filter: blur(2px) }
+.modal-card{ position:relative; width:min(720px, calc(100vw - 24px)); max-height:min(86vh, 900px); overflow:auto; background:var(--card); border:1px solid var(--border); border-radius:16px; box-shadow:var(--shadow) }
+.modal-header{ display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:1px solid var(--border) }
+.modal-title{ margin:0; font-size:16px }
+.icon-btn{ background:transparent; border:none; color:inherit; padding:6px; cursor:pointer; border-radius:8px }
+.modal-body{ padding:14px }

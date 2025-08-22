@@ -1,0 +1,32 @@
+.verse-page{ max-width:1200px; margin:0 auto; padding:20px }
+.page-header{ display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:14px }
+.title-wrap{ display:flex; flex-direction:column; gap:4px }
+.title{ font-size:22px; margin:0 }
+.sub{ color:var(--muted); font-size:13px }
+.header-actions{ display:flex; gap:8px }
+
+
+.btn{ appearance:none; border:1px solid var(--border); background:var(--card); color:var(--text); padding:8px 12px; border-radius:10px; cursor:pointer; box-shadow:none; transition:transform .05s ease, background .2s }
+.btn:hover{ transform:translateY(-1px) }
+.btn:disabled{ opacity:.5; cursor:not-allowed }
+.btn.ghost{ background:transparent }
+.btn.pri{ background:var(--accent); border-color:transparent; color:white }
+.btn.sm{ padding:6px 10px; border-radius:8px; font-size:12px }
+
+
+.card{ background:var(--card); border:1px solid var(--border); border-radius:16px; box-shadow:var(--shadow); overflow:hidden }
+
+
+.filters{ display:grid; grid-template-columns: repeat(6, minmax(0,1fr)); gap:12px; padding:16px; background:var(--card); border:1px solid var(--border); border-radius:16px; margin-bottom:14px }
+.field{ display:flex; flex-direction:column; gap:6px }
+.field--actions{ align-self:end; display:flex; justify-content:flex-end }
+label{ font-size:12px; color:var(--muted) }
+input, select, textarea{ width:100%; padding:9px 10px; border-radius:10px; background:#0f1319; border:1px solid var(--border); color:var(--text); outline:none }
+@media (prefers-color-scheme: light){ input,select,textarea{ background:#fff } }
+input::placeholder, textarea::placeholder{ color:#7a8496 }
+textarea{ resize:vertical }
+
+
+.table-wrap{ width:100%; overflow:auto }
+.table{ width:100%; border-collapse:collapse; font-size:13px }
+.refcell .bible{ color:var(--muted); font-size:12px }
