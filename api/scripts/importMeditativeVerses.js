@@ -1,98 +1,113 @@
+// scripts/importMeditativeVerses.js
 const fs = require('fs');
 const path = require('path');
 const { sequelize, Book, MeditativeVerse, Verse } = require('../models');
 
 async function importMeditativeVerses() {
-  let filePath = path.join(__dirname, '../data/initial/lsg1910.json');
-  let rawData = fs.readFileSync(filePath, 'utf-8');
-  let  data = JSON.parse(rawData);
-  const result = [];
   try {
     await sequelize.authenticate();
     console.log('✅ Connexion DB OK');
-    
-    const books = await Book.findAll({
-      where: { bibleCode: 'LSG1910' }
-    });
 
+    // ---- charger les livres LSG1910 et leurs versets ----
+    const books = await Book.findAll({ where: { bibleCode: 'LSG1910' } });
+    const bookByName = new Map(
+      books.map(b => [String(b.name).toUpperCase(), b])
+    );
     const bookIds = books.map(b => b.id);
-    const verses = await Verse.findAll({
-      where: {
-        bookId: bookIds
-      }
-    });
+    const verses = await Verse.findAll({ where: { bookId: bookIds } });
 
-    console.log('✅ Loaded verses :', verses.length);
+    // index rapide (bookId|chapter|verse) -> Verse
+    const verseIndex = new Map(
+      verses.map(v => [`${v.bookId}|${v.chapterNum}|${v.verseNum}`, v])
+    );
 
-    for (const testament of data.testaments) {
+    console.log('✅ Loaded books:', books.length, 'verses:', verses.length);
+
+    // ---------- 1) marquer tous les versets "méditatifs" (création si manquant) ----------
+    const fileMeditative = path.join(__dirname, '../data/initial/lsg1910.json');
+    const rawMeditative = fs.readFileSync(fileMeditative, 'utf-8');
+    const dataMeditative = JSON.parse(rawMeditative);
+
+    let createdBase = 0, touchedBase = 0, missingRefsBase = 0;
+
+    for (const testament of dataMeditative.testaments) {
       for (const book of testament.books) {
-        const bookId = books.find(b => b.name.toUpperCase() === book.name.toUpperCase()).id;
+        const b = bookByName.get(String(book.name).toUpperCase());
+        if (!b) { missingRefsBase++; continue; }
+
         for (const chapter of book.chapters) {
-          for (const verse of chapter.verses.filter(v => v.meditative === true)) {
-            result.push({
-              bookId: bookId,
-              chapterNum: chapter.number,
-              verseNum: verse.id
-            });
+          for (const v of chapter.verses) {
+            if (v.meditative === true) {
+              const key = `${b.id}|${chapter.number}|${v.id}`;
+              const verseRow = verseIndex.get(key);
+              if (!verseRow) { missingRefsBase++; continue; }
+
+              // Crée si absent, sinon ne touche que ce qui est nécessaire
+              const [rec, isCreated] = await MeditativeVerse.upsert({
+                verseId: verseRow.id,
+                // on ne force pas 'commentary' ici; on le posera dans l'étape 2 si dispo
+                // IMPORTANT: approved reste false par défaut
+                approved: false,
+              }, { returning: false });
+
+              if (isCreated) createdBase++; else touchedBase++;
+            }
           }
         }
       }
     }
-    filePath = path.join(__dirname, '../data/lsg1910_verses_commentated.json');
-    rawData = fs.readFileSync(filePath, 'utf-8');
-    data = JSON.parse(rawData);
+    console.log(`✅ Étape 1 — Sélection "méditatif": créés=${createdBase}, existants=${touchedBase}, refs introuvables=${missingRefsBase}`);
 
-    function formatVerseRef(ref) {
+    // ---------- 2) appliquer thèmes + commentaire (reste non approuvé) ----------
+    const fileCommented = path.join(__dirname, '../data/lsg1910_verses_commentated.json');
+    const rawCommented = fs.readFileSync(fileCommented, 'utf-8');
+    const dataCommented = JSON.parse(rawCommented);
+
+    const parseRef = (ref) => {
       const parts = ref.split(' ');
-      return {
-        bookName: parts.slice(0, -1).join(' '),
-        chapterVerse: parts[parts.length - 1]
-      };
+      const chapterVerse = parts.pop();
+      return { bookName: parts.join(' '), chapterVerse };
+    };
+
+    let created2 = 0, updated2 = 0, missingRefs2 = 0;
+
+    for (const entry of dataCommented) {
+      const { bookName, chapterVerse } = parseRef(entry.ref);
+      const [chapterStr, verseStr] = String(chapterVerse).split(':');
+      const chapterNum = parseInt(chapterStr, 10);
+      const verseNum = parseInt(verseStr, 10);
+
+      const b = bookByName.get(String(bookName).toUpperCase());
+      if (!b) { missingRefs2++; continue; }
+
+      const verseRow = verseIndex.get(`${b.id}|${chapterNum}|${verseNum}`);
+      if (!verseRow) { missingRefs2++; continue; }
+
+      // NOTE: toute modification de "commentary" déclenchera ton trigger:
+      // - commentary_updated_at = now()
+      // - approved = false
+      // donc on fixe explicitement approved=false ici aussi (cohérent)
+      const [rec, isCreated] = await MeditativeVerse.upsert({
+        verseId: verseRow.id,
+        themes: entry.themes ?? null,
+        commentary: entry.commentary ?? null,
+        approved: false,
+      }, { returning: false });
+
+      if (isCreated) created2++; else updated2++;
     }
 
-    // let currentVerseCount = 0;
-    let created = 0, updated = 0;
+    console.log(`✅ Étape 2 — Commentaires: créés=${created2}, mis à jour=${updated2}, refs introuvables=${missingRefs2}`);
+    console.log('🎉 Import terminé.');
 
-    for (const verse of data) {
-      const { bookName, chapterVerse } = formatVerseRef(verse.ref);
-      const [chapter, verseNum] = chapterVerse.split(':');
-
-      const book = books.find(b => b.name.toUpperCase() === bookName.toUpperCase());
-      // console.log('bookName', bookName, 'bookCode', book.code, 'chapter', chapter, 'verseNum', verseNum);
-      const currentVerse = verses.find(v => v.bookId === book.id && v.chapterNum === parseInt(chapter) && v.verseNum === parseInt(verseNum));
-      const [record, isCreated] = await MeditativeVerse.upsert({
-        verseId: currentVerse.id,
-        themes: verse.themes,
-        commentary: verse.commentary,
-        verseApproved: true,
-        commentApproved: false
-      });
-
-      if (isCreated) created++;
-      else updated++;
-
-      // if (currentVerse) currentVerseCount++;
-      // console.log('currentVerse', currentVerse.id, 'verseNum', verseNum);
-    }
-
-    console.log(`✅ Import terminé. Créés: ${created}, Mis à jour: ${updated}`);
-    // console.log('currentVerseCount', currentVerseCount);
-    
   } catch (err) {
-    console.error('❌ Erreur chargement versets:', err);
+    console.error('❌ Erreur import:', err);
     process.exit(1);
   }
-  // for (const verse of verses) {
 }
 
 sequelize.sync().then(() => {
   importMeditativeVerses()
-    .then(() => {
-      console.log('✅ Done.');
-      process.exit();
-    })
-    .catch((err) => {
-      console.error('❌ Erreur lors de l’import:', err);
-      process.exit(1);
-    });
+    .then(() => { console.log('✅ Done.'); process.exit(0); })
+    .catch((err) => { console.error('❌ Erreur lors de l’import:', err); process.exit(1); });
 });

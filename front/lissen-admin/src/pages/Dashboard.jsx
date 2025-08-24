@@ -170,6 +170,7 @@ function MiniChart({ data, height = 120 }) {
   const approved  = (data.approved  || []).map(Number);
   const labels    = (data.labels && data.labels.length ? data.labels : ["L","M","M","J","V","S","D"]);
 
+  console.log("MiniChart data:", data);
   const maxY = Math.max(1, ...created, ...commented, ...approved);
   const series = [
     { key: "created",   values: created,   stroke: "var(--accent)"   },
@@ -178,10 +179,14 @@ function MiniChart({ data, height = 120 }) {
   ];
   const paths = series.map(s => linePath(s.values, width, height, pad, maxY));
 
+  const sumCreated = created.reduce((a, b) => a + b, 0);
+  const sumCommented = commented.reduce((a, b) => a + b, 0);
+  const sumApproved = approved.reduce((a, b) => a + b, 0);
+
   return (
     <>
       <svg className="mini-chart" width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
-        <g className="axes" stroke="var(--border)" strokeWidth="1"> {/* ← add stroke */}
+        <g className="axes" stroke="var(--border)" strokeWidth="1">
           <line x1={pad} y1={height-pad} x2={width-pad/2} y2={height-pad} />
           <line x1={pad} y1={pad/2} x2={pad} y2={height-pad} />
           {labels.map((lab, i) => (
@@ -195,13 +200,11 @@ function MiniChart({ data, height = 120 }) {
         ))}
       </svg>
       <div className="legend">
-        <span><i className="dot created" /> Créations ({created})</span>
-        <span><i className="dot commented" /> Commentaires ({commented})</span>
-        <span><i className="dot approved" /> Approbations ({approved})</span>
+        <span><i className="dot created" /> Créations ({sumCreated})</span>
+        <span><i className="dot commented" /> Commentaires ({sumCommented})</span>
+        <span><i className="dot approved" /> Approbations ({sumApproved})</span>
       </div>
-
     </>
-    
   );
 }
 
@@ -234,7 +237,7 @@ async function fetchStats(){
 
 }
 async function fetchActivity(){
-  if (!USE_MOCK) {
+  if (USE_MOCK) {
     await delay(220);
     return Array.from({ length: 10 }).map((_, i) => ({
       id: `a_${i+1}`,
@@ -243,13 +246,13 @@ async function fetchActivity(){
       atISO: new Date(Date.now() - i * 3600_000).toISOString(),
     }));
   }
-  const res = await fetch(`${API_BASE}/activity/recent`);
+  const res = await fetch(`${API_BASE}/stats/activity`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
 
 async function fetchWeekly(){
-  if (!USE_MOCK) {
+  if (USE_MOCK) {
     console.log("Fetching weekly data...");
     await delay(200);
     const labels = ["L","M","M","J","V","S","D"];
@@ -261,7 +264,6 @@ async function fetchWeekly(){
     return { labels, created, commented, approved };
   }
 
-  console.log("API_BASE:", API_BASE);
   const res = await fetch(`${API_BASE}/stats/weekly`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();

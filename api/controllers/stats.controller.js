@@ -2,20 +2,20 @@ const service = require('../services/stats.service');
 
 async function getRecentActivity(req, res) {
   try {
-    const activity = await service.getRecentActivity();
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 10));
+    const activity = await service.getRecentActivity(limit);
     res.json(activity);
   } catch (error) {
+    console.error("stats.controller:: Error fetching recent activity:", error);
     res.status(500).json({ error: error.message });
   }
 }
 
 async function getVerses(req, res) {
   try {
-    console.log("stats.controller:: Fetching verses...");
     const verses = await service.getVerses();
     res.json(verses);
   } catch (error) {
-    console.error("stats.controller:: Error fetching verses:", error);
     res.status(500).json({ error: error.message });
   }
 }
