@@ -32,6 +32,7 @@ export default function Dashboard(){
   const [error, setError] = useState("");
 
   useEffect(() => {
+    console.log("Fetching dashboard data...");
     let alive = true;
     (async () => {
       setLoading(true); setError("");
@@ -40,12 +41,28 @@ export default function Dashboard(){
           fetchStats(), fetchActivity(), fetchWeekly()
         ]);
         if (!alive) return;
-        setStats(s); setActivity(a); setWeekly(w);
-      } catch(e){ if (!alive) return; setError(e?.message || "Erreur de chargement du dashboard"); }
-      finally { if (alive) setLoading(false); }
+        console.log("Dashboard data fetched:", { stats: s, activity: a, weekly: w });
+        setStats(s);
+        setActivity(a);
+        setWeekly(w);
+      } catch(e) {
+        if (!alive) return;
+        setError(e?.message || "Erreur de chargement du dashboard");
+      } finally { if (alive) setLoading(false); }
     })();
     return () => { alive = false };
   }, []);
+
+  const QUICK_LINKS = [
+    { icon: "✍️", title: "Versets à commenter", sub: "Méditatif = oui", to: "/verses?meditative=yes", enabled: true },
+    { icon: "✅", title: "Approbations en attente", sub: "Commentaires non validés", to: "/verses?approved=no", enabled: true },
+
+    { icon: "🧘", title: "Méditations", sub: "Composer & publier", to: "/meditations", enabled: false },
+    { icon: "📰", title: "Blog", sub: "Rédiger un article", to: "/blog", enabled: false },
+    { icon: "📚", title: "Études bibliques", sub: "Séries & leçons", to: "/studies", enabled: false },
+    { icon: "🙏", title: "Prières", sub: "Thématiques & séries", to: "/prayers", enabled: false },
+    { icon: "🎛️", title: "Tous les modules", sub: "Catalogue des features", to: "/modules", enabled: false },
+  ];
 
   return (
     <div className="dash-page">
@@ -67,8 +84,8 @@ export default function Dashboard(){
           <section className="cards-4">
             <StatCard label="Total versets" value={stats.total} hint="Toutes versions confondues" />
             <StatCard label="Méditatifs" value={stats.meditative} hint="Taggés à commenter" tone="accent2" />
-            <StatCard label="Approuvés" value={stats.approved} hint="Commentaire validé" tone="ok" />
-            <StatCard label="En attente" value={stats.pending} hint="À commenter ou à relire" />
+            <StatCard label="Approuvés" value={stats.approved} hint="Commentaires validés" tone="ok" />
+            <StatCard label="En attente" value={stats.pending} hint="À commenter ous à relire" />
           </section>
 
           <section className="grid-2">
@@ -86,27 +103,25 @@ export default function Dashboard(){
                 <span className="sub">Les actions les plus courantes</span>
               </div>
               <div className="quick-grid">
-                <Link className="quick" to="/verses?meditative=yes">
-                  <div className="q-icon">✍️</div>
-                  <div className="q-title">Versets à commenter</div>
-                  <div className="q-sub">Filtre "méditatif = oui"</div>
-                </Link>
-                <Link className="quick" to="/verses?approved=no">
-                  <div className="q-icon">📝</div>
-                  <div className="q-title">Commentaires en brouillon</div>
-                  <div className="q-sub">Non approuvés</div>
-                </Link>
-                <Link className="quick" to="/verses?book=Psaumes">
-                  <div className="q-icon">🎯</div>
-                  <div className="q-title">Psaumes</div>
-                  <div className="q-sub">Filtrer par livre</div>
-                </Link>
-                <Link className="quick" to="/verses/new">
-                  <div className="q-icon">➕</div>
-                  <div className="q-title">Lorem, ipsum dolor.</div>
-                  <div className="q-sub">Lorem, ipsum.</div>
-                </Link>
+                {QUICK_LINKS.map((q, idx) =>
+                  q.enabled ? (
+                    <Link key={idx} className="quick" to={q.to}>
+                      <div className="q-icon">{q.icon}</div>
+                      <div className="q-title">{q.title}</div>
+                      <div className="q-sub">{q.sub}</div>
+                    </Link>
+                  ) : (
+                    <div key={idx} className="quick disabled" aria-disabled="true" title="Bientôt">
+                      <div className="q-icon">{q.icon}</div>
+                      <div className="q-title">
+                        {q.title} <span className="soon">Bientôt</span>
+                      </div>
+                      <div className="q-sub">{q.sub}</div>
+                    </div>
+                  )
+                )}
               </div>
+
             </div>
           </section>
 
@@ -145,32 +160,48 @@ function StatCard({ label, value, hint, tone }){
   );
 }
 
-function MiniChart({ data, height = 120 }){
-  const pad = 24; // padding for axes labels
+function MiniChart({ data, height = 120 }) {
+  const pad = 24;
   const width = 520;
-  const maxY = Math.max(1, ...data.created, ...data.commented, ...data.approved);
-  const labels = data.labels.length ? data.labels : ["L", "M", "M", "J", "V", "S", "D"];
 
+  // coerce + guard
+  const created   = (data.created   || []).map(Number);
+  const commented = (data.commented || []).map(Number);
+  const approved  = (data.approved  || []).map(Number);
+  const labels    = (data.labels && data.labels.length ? data.labels : ["L","M","M","J","V","S","D"]);
+
+  const maxY = Math.max(1, ...created, ...commented, ...approved);
   const series = [
-    { key: "created", values: data.created },
-    { key: "commented", values: data.commented },
-    { key: "approved", values: data.approved },
+    { key: "created",   values: created,   stroke: "var(--accent)"   },
+    { key: "commented", values: commented, stroke: "var(--accent-2)" },
+    { key: "approved",  values: approved,  stroke: "var(--muted)"    },
   ];
   const paths = series.map(s => linePath(s.values, width, height, pad, maxY));
 
   return (
-    <svg className="mini-chart" width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
-      <g className="axes">
-        <line x1={pad} y1={height-pad} x2={width-pad/2} y2={height-pad} />
-        <line x1={pad} y1={pad/2} x2={pad} y2={height-pad} />
-        {labels.map((lab, i) => (
-          <text key={i} x={pad + i * ((width - pad*2)/ (labels.length-1 || 1))} y={height-6} textAnchor="middle">{lab}</text>
+    <>
+      <svg className="mini-chart" width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+        <g className="axes" stroke="var(--border)" strokeWidth="1"> {/* ← add stroke */}
+          <line x1={pad} y1={height-pad} x2={width-pad/2} y2={height-pad} />
+          <line x1={pad} y1={pad/2} x2={pad} y2={height-pad} />
+          {labels.map((lab, i) => (
+            <text key={i} x={pad + i * ((width - pad*2)/ (labels.length-1 || 1))} y={height-6} textAnchor="middle" fill="var(--muted)">
+              {lab}
+            </text>
+          ))}
+        </g>
+        {paths.map((d, i) => (
+          <path key={i} className={`s-${series[i].key}`} d={d} fill="none" strokeWidth="2" />
         ))}
-      </g>
-      {paths.map((d, i) => (
-        <path key={i} d={d} fill="none" strokeWidth="2" />
-      ))}
-    </svg>
+      </svg>
+      <div className="legend">
+        <span><i className="dot created" /> Créations ({created})</span>
+        <span><i className="dot commented" /> Commentaires ({commented})</span>
+        <span><i className="dot approved" /> Approbations ({approved})</span>
+      </div>
+
+    </>
+    
   );
 }
 
@@ -214,11 +245,14 @@ async function fetchActivity(){
 }
 async function fetchWeekly(){
   if (USE_MOCK) {
+    console.log("Fetching weekly data...");
     await delay(200);
     const labels = ["L","M","M","J","V","S","D"];
     const created = [4,8,3,10,6,2,7];
     const commented = [2,5,1,8,3,1,4];
     const approved = [1,4,1,6,3,1,2];
+
+    console.log("Weekly data fetched:", { labels, created, commented, approved });
     return { labels, created, commented, approved };
   }
   const res = await fetch(`${API_BASE}/stats/weekly`);
