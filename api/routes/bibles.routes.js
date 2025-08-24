@@ -1,4 +1,3 @@
-// routes/bibles.routes.js
 const express = require('express');
 const router = express.Router();
 const biblesController = require('../controllers/bibles.controller');

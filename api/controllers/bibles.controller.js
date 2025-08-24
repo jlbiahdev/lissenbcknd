@@ -1,4 +1,3 @@
-// controllers/bibles.controller.js
 const biblesService = require('../services/bibles.service');
 
 async function getBooks(req, res) {

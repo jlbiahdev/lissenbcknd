@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import "../styles/index.css";
+import { API_BASE } from "../api/client";
 
 /**
  * Dashboard.jsx — Lissen Admin Front (Vanilla CSS)
@@ -20,8 +21,7 @@ import "../styles/index.css";
  *   GET /stats/weekly => { labels:[], created:[], commented:[], approved:[] }
  */
 
-const USE_MOCK = true;
-const API_BASE = (typeof window !== "undefined" && window.__API_BASE__) || "/api";
+const USE_MOCK = false;
 
 export default function Dashboard(){
 
@@ -83,7 +83,7 @@ export default function Dashboard(){
         <>
           <section className="cards-4">
             <StatCard label="Total versets" value={stats.total} hint="Toutes versions confondues" />
-            <StatCard label="Méditatifs" value={stats.meditative} hint="Taggés à commenter" tone="accent2" />
+            <StatCard label="Méditatifs" value={stats.meditatives} hint="Taggés à commenter" tone="accent2" />
             <StatCard label="Approuvés" value={stats.approved} hint="Commentaires validés" tone="ok" />
             <StatCard label="En attente" value={stats.pending} hint="À commenter ous à relire" />
           </section>
@@ -225,12 +225,16 @@ async function fetchStats(){
     await delay(200);
     return { total: 3120, meditative: 1040, approved: 680, pending: 2440 };
   }
-  const res = await fetch(`${API_BASE}/stats/verses`);
+  const url = `${API_BASE}/stats/verses`;
+  const res = await fetch(url);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+  const data = await res.json();
+  console.log("Real data fetched:", data);
+  return data;
+
 }
 async function fetchActivity(){
-  if (USE_MOCK) {
+  if (!USE_MOCK) {
     await delay(220);
     return Array.from({ length: 10 }).map((_, i) => ({
       id: `a_${i+1}`,
@@ -243,8 +247,9 @@ async function fetchActivity(){
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
+
 async function fetchWeekly(){
-  if (USE_MOCK) {
+  if (!USE_MOCK) {
     console.log("Fetching weekly data...");
     await delay(200);
     const labels = ["L","M","M","J","V","S","D"];
@@ -255,6 +260,8 @@ async function fetchWeekly(){
     console.log("Weekly data fetched:", { labels, created, commented, approved });
     return { labels, created, commented, approved };
   }
+
+  console.log("API_BASE:", API_BASE);
   const res = await fetch(`${API_BASE}/stats/weekly`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
