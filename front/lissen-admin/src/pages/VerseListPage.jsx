@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import "../styles/index.css";
+import { API_BASE } from "../api/client";
 
 /**
  * VerseListPage.jsx — Lissen Admin Front (Vanilla CSS)
@@ -22,8 +23,7 @@ import "../styles/index.css";
  *   PUT   /verses/:id/commentary { commentary, approved }
  */
 
-const USE_MOCK = true; // TODO: switch to false when backend is ready
-const API_BASE = (typeof window !== "undefined" && window.__API_BASE__) || "/api";
+const USE_MOCK = false; // TODO: switch to false when backend is ready
 
 export default function VerseListPage() {
 
@@ -51,7 +51,7 @@ export default function VerseListPage() {
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   // Books/chapter helpers (basic placeholders; feel free to wire real metadata)
-  const availableBibles = useMemo(() => ["LSG", "KJV", "S21"], []);
+  const availableBibles = useMemo(() => ["LSG"], []);
   const availableBooks = useMemo(() =>
     (
       USE_MOCK ? MOCK_BOOKS : Array.from(new Set(rows.map(r => r.book)))
@@ -369,9 +369,12 @@ async function fetchVerses({ filters, page, pageSize, sort }) {
   params.set("pageSize", String(pageSize));
   params.set("sort", `${sort.by}:${sort.dir}`);
 
-  const res = await fetch(`${API_BASE}/verses?${params.toString()}`);
+  const res = await fetch(`${API_BASE}/bibles/verses?${params.toString()}`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+  const data = await res.json();
+
+  console.log("Fetched verses:", data);
+  return data;
 }
 
 async function apiPatch(url, body) {

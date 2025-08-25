@@ -21,8 +21,6 @@ import { API_BASE } from "../api/client";
  *   GET /stats/weekly => { labels:[], created:[], commented:[], approved:[] }
  */
 
-const USE_MOCK = false;
-
 export default function Dashboard(){
 
   const [stats, setStats] = useState({ total:0, meditative:0, approved:0, pending:0 });
@@ -224,10 +222,6 @@ function linePath(values, width, height, pad, maxY){
 
 // ---------------- Data ----------------
 async function fetchStats(){
-  if (USE_MOCK) {
-    await delay(200);
-    return { total: 3120, meditative: 1040, approved: 680, pending: 2440 };
-  }
   const url = `${API_BASE}/stats/verses`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -236,34 +230,14 @@ async function fetchStats(){
   return data;
 
 }
+
 async function fetchActivity(){
-  if (USE_MOCK) {
-    await delay(220);
-    return Array.from({ length: 10 }).map((_, i) => ({
-      id: `a_${i+1}`,
-      type: ["create","comment","approve"][i % 3],
-      label: `Psaumes ${(i%50)+1}:${(i%20)+1} — mise à jour`,
-      atISO: new Date(Date.now() - i * 3600_000).toISOString(),
-    }));
-  }
   const res = await fetch(`${API_BASE}/stats/activity`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
 
 async function fetchWeekly(){
-  if (USE_MOCK) {
-    console.log("Fetching weekly data...");
-    await delay(200);
-    const labels = ["L","M","M","J","V","S","D"];
-    const created = [4,8,3,10,6,2,7];
-    const commented = [2,5,1,8,3,1,4];
-    const approved = [1,4,1,6,3,1,2];
-
-    console.log("Weekly data fetched:", { labels, created, commented, approved });
-    return { labels, created, commented, approved };
-  }
-
   const res = await fetch(`${API_BASE}/stats/weekly`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
