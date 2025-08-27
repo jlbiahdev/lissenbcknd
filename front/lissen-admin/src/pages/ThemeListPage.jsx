@@ -44,10 +44,13 @@ export default function ThemeListPage(){
     try {
       if (editing.id){
         const updated = await updateTheme(editing.id, payload);
-        setRows(rs => rs.map(r => r.id === editing.id ? updated : r));
+        // fallback: si l'API renvoie 204/no body, on garde payload local
+        const merged = { ...payload, ...(updated || {}), id: editing.id };
+        setRows(rs => rs.map(r => r.id === editing.id ? merged : r));
       } else {
         const created = await createTheme(payload);
-        setRows(rs => [created, ...rs]);
+        const row = created?.id ? created : { id: Date.now(), ...payload };
+        setRows(rs => [row, ...rs]);
       }
       setEditing(null);
     } catch(e){
@@ -94,7 +97,7 @@ export default function ThemeListPage(){
                   <tr key={t.id}>
                     <td><span className="theme-chip-lite" style={{borderColor:"var(--border)"}}>{t.name}</span></td>
                     <td className="row-actions">
-                      <button className="btn sm" onClick={()=>setEditing(t)}>Éditer</button>
+                      <button className="btn sm" onClick={()=>setEditing({ ...t })}>Éditer</button>
                     </td>
                   </tr>
                 ))}
@@ -151,9 +154,21 @@ async function createTheme(body){
   if(!r.ok) throw new Error(`HTTP ${r.status}`); return r.json();
 }
 
-async function updateTheme(id, body){
-  const r = await fetch(`${API_BASE}/themes/${id}`, { method:"PUT", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(body) });
-  if(!r.ok) throw new Error(`HTTP ${r.status}`); return r.json();
+async function updateTheme(id, body) {
+  const r = await fetch(`${API_BASE}/themes/${id}`, {
+    method:"PUT",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify(body)
+  });
+
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+
+  // certaines API renvoient 204 No Content
+  if (r.status === 204) return { id, ...body };
+
+  const txt = await r.text();
+
+  return txt ? JSON.parse(txt) : { id, ...body };
 }
 
 const delay = (ms)=>new Promise(r=>setTimeout(r,ms));

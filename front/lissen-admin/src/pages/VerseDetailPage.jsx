@@ -32,6 +32,7 @@ export default function VerseDetailPage() {
   const [error, setError] = useState("");
   const [model, setModel] = useState(null); // server state
   const [form, setForm] = useState(null);   // local editable copy
+  const [themes, setThemes] = useState([]);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState(null);
 
@@ -62,6 +63,10 @@ export default function VerseDetailPage() {
     window.addEventListener("beforeunload", beforeUnload);
     return () => window.removeEventListener("beforeunload", beforeUnload);
   }, [dirty]);
+
+  useEffect(() => {
+    if (model) setThemes(model.themes || model.Meditative?.themes || []);
+  }, [model]);
 
   function onBack() {
     if (dirty && !confirm("Des modifications non enregistrées seront perdues. Continuer ?")) return;
