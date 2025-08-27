@@ -14,10 +14,6 @@ const MeditativeVerse = sequelize.define("MeditativeVerse", {
     allowNull: false,
     unique: "uq_meditative_verse",
   },
-  themes: {
-    type: DataTypes.ARRAY(DataTypes.INTEGER),
-    allowNull: true,
-  },
   commentary: {
     type: DataTypes.TEXT,
     allowNull: true,

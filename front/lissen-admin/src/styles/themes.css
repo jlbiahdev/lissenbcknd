@@ -14,3 +14,54 @@
     border:1px solid var(--border); 
     vertical-align:middle; 
 }
+
+.themes-picker { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 8px; 
+}
+.themes-list { 
+    display: flex; 
+    flex-wrap: wrap; 
+    gap: 6px; 
+    min-height: 28px; 
+}
+.themes-empty { 
+    color: var(--muted); font-size: 12px; 
+}
+.theme-chip-lite { 
+    display:inline-flex; 
+    align-items:center; 
+    gap:6px; 
+    padding:4px 10px; 
+    border-radius:999px; 
+    border:1px solid var(--border); 
+    background:var(--card); 
+    font-size:12px; 
+}
+.theme-chip-lite .chip-x { 
+    border:none; 
+    background:transparent; 
+    cursor:pointer; 
+    font-size:14px; 
+    line-height:1; 
+}
+.themes-input { 
+    display:flex; 
+    gap:8px; 
+}
+.themes-input input { 
+    flex:1; 
+}
+.theme-suggest { 
+    display:flex; 
+    flex-wrap:wrap; 
+    gap:6px; 
+}
+.theme-suggest .pill { 
+    border:1px solid var(--border); 
+    background:var(--surface); 
+    border-radius:999px; 
+    padding:4px 8px; 
+    font-size:12px; 
+}

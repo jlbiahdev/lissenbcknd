@@ -35,13 +35,14 @@ async function toggleCommentaryApproval(req, res) {
   }
 }
 
-async function updateCommentary(req, res) {
+async function edit(req, res) {
   const { verseId } = req.params;
-  const { commentary } = req.body;
+  const { commentary, themes } = req.body;
   try {
-    const result = await meditationService.updateCommentary(verseId, commentary);
+    const result = await meditationService.update(verseId, commentary, themes);
     res.json(result);
   } catch (error) {
+    console.error('Error updating meditation:', error);
     res.status(400).json({ error: error.message });
   }
 }
@@ -109,7 +110,7 @@ async function getByBookChapterVerse(req, res) {
 module.exports = {
   insert,
   toggleCommentaryApproval,
-  updateCommentary,
+  edit,
   addTheme,
   remove,
   removeTheme,

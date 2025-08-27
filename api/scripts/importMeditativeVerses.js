@@ -87,13 +87,23 @@ async function importMeditativeVerses() {
       // - commentary_updated_at = now()
       // - approved = false
       // donc on fixe explicitement approved=false ici aussi (cohérent)
-      const [rec, isCreated] = await MeditativeVerse.upsert({
-        verseId: verseRow.id,
-        themes: entry.themes ?? null,
-        commentary: entry.commentary ?? null,
-        approved: false,
-      }, { returning: false });
+      const [rec, isCreated] = await MeditativeVerse.findOrCreate({
+        where: { verseId: verseRow.id },
+        defaults: {
+          commentary: entry.commentary ?? null,
+          approved: false,
+        },
+      });
 
+      // si déjà existant, on met à jour commentaire + approuvé
+      if (!isCreated) {
+        await rec.update({
+          commentary: entry.commentary ?? null,
+          approved: false
+        });
+      }
+      console.log(`✅ Méditatif verset ${rec.id} ${isCreated ? 'créé' : 'mis à jour'}`, rec.id);
+      await rec.setThemes(entry.themes || []);
       if (isCreated) created2++; else updated2++;
     }
 

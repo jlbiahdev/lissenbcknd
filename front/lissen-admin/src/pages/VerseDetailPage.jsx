@@ -64,9 +64,19 @@ export default function VerseDetailPage() {
     return () => window.removeEventListener("beforeunload", beforeUnload);
   }, [dirty]);
 
-  useEffect(() => {
-    if (model) setThemes(model.themes || model.Meditative?.themes || []);
-  }, [model]);
+ useEffect(() => {
+   let alive = true;
+   (async () => {
+     try {
+       const r = await fetch(`${API_BASE}/themes`);
+       if (!r.ok) throw new Error(`HTTP ${r.status}`);
+       const data = await r.json();
+       if (!alive) return;
+       setThemes(Array.isArray(data.items) ? data.items : data);
+     } catch (_) {}
+   })();
+   return () => { alive = false; };
+ }, []);
 
   function onBack() {
     if (dirty && !confirm("Des modifications non enregistrées seront perdues. Continuer ?")) return;

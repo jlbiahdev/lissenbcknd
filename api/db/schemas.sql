@@ -54,6 +54,12 @@ CREATE TABLE meditative_verses (
   commentary_updated_at TIMESTAMPTZ
 );
 
+CREATE TABLE meditative_verse_themes (
+  meditative_verse_id BIGINT REFERENCES meditative_verses(id) ON DELETE CASCADE,
+  theme_id INT REFERENCES themes(id) ON DELETE CASCADE,
+  PRIMARY KEY (meditative_verse_id, theme_id)
+);
+
 -- Un seul enregistrement par verset (si c’est ta règle métier)
 ALTER TABLE meditative_verses
   ADD CONSTRAINT uq_meditative_verse UNIQUE (verse_id);

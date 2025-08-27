@@ -1,5 +1,5 @@
 // services/bibles.service.js
-const { Bible, Book, Verse, MeditativeVerse } = require('../models');
+const { Bible, Book, Verse, MeditativeVerse, Theme } = require('../models');
 
 async function getBooks(code) {
   const bible = await Bible.findOne({
@@ -42,7 +42,12 @@ async function getVerses(bookId, meditative, approved, offset, limit) {
     attributes: { exclude: ['bookId'] },
     include: [
       { model: Book, as: 'Book', attributes: ["id", "name", "code", "bibleCode"] },
-      { model: MeditativeVerse, as: 'Meditative', attributes: ["id", "themes", "commentary", "approved"] }
+      { 
+        model: MeditativeVerse, 
+        as: 'Meditative', 
+        attributes: ["id", "commentary", "approved"],
+        include: [{ model: Theme, as: "themes" }]
+      },
     ],
     offset,
     limit,

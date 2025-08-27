@@ -1,4 +1,4 @@
-const { MeditativeVerse, Book, Theme, Verse } = require('../models');
+const { sequelize, MeditativeVerse, Book, Theme, Verse } = require('../models');
 const { formatToExport, formatToView } = require('../helpers/exportFormatter');
 
 async function insert(verseId) {
@@ -30,14 +30,78 @@ async function toggleCommentaryApproval(verseId) {
   return meditation;
 }
 
-async function updateCommentary(verseId, commentary) {
-  const [meditation] = await MeditativeVerse.findOrCreate({
-    where: { verseId },
+async function update(verseId, commentary, themes) {
+  return sequelize.transaction(async (t) => {
+    // 1) trouver/créer la ligne meditative_verses
+    const [meditation] = await MeditativeVerse.findOrCreate({
+      where: { verseId },
+      defaults: { approved: false },
+      transaction: t,
+    });
+
+    // 2) maj commentaire + approuvé (reset à false si on édite le commentaire)
+    await meditation.update(
+      { commentary: commentary ?? null, approved: false },
+      { transaction: t }
+    );
+
+    // 3) normaliser les thèmes -> IDs
+    const themeIds = await resolveThemeIds(themes, t);
+
+    // 4) poser la relation N-N (remplace tout l’ensemble)
+    await meditation.setThemes(themeIds, { transaction: t });
+
+    return meditation; // optionnel: .reload({ include: [{ model: Theme, as: 'themes' }], transaction: t })
   });
-  meditation.commentary = commentary;
-  meditation.verseApproved = false;
-  await meditation.save();
-  return meditation;
+}
+
+/**
+ * Accepte: [1, 3] | [{id:1}, {id:3}] | ["Amour", "Foi"] | mix des trois.
+ * Retourne: tableau d'IDs (entiers) existants (créés si nécessaire quand string).
+ */
+async function resolveThemeIds(input, transaction) {
+  if (!input || !Array.isArray(input) || input.length === 0) return [];
+
+  const ids = [];
+
+  for (const item of input) {
+    if (item == null) continue;
+
+    // déjà un id number
+    if (typeof item === 'number' && Number.isInteger(item)) {
+      ids.push(item);
+      continue;
+    }
+
+    // objet avec id
+    if (typeof item === 'object' && item.id && Number.isInteger(item.id)) {
+      ids.push(item.id);
+      continue;
+    }
+
+    // libellé -> findOrCreate by name (trim + case insensitive à adapter selon ta contrainte)
+    if (typeof item === 'string') {
+
+      const name = item.trim();
+
+      if (!name) continue;
+
+      const [row] = await Theme.findOrCreate({
+        where: { name },
+        defaults: { name },
+        transaction,
+      });
+
+      ids.push(row.id);
+
+      continue;
+    }
+
+    // sinon on ignore silencieusement
+  }
+
+  // dédoublonner
+  return Array.from(new Set(ids));
 }
 
 async function addTheme(verseId, theme) {
@@ -140,7 +204,7 @@ async function getByBookChapterVerse(bookId, chapterNum, verseNum) {
 module.exports = {
   insert,
   toggleCommentaryApproval,
-  updateCommentary,
+  update,
   addTheme,
   remove,
   removeTheme,

@@ -17,6 +17,20 @@ Verse.belongsTo(Book, { foreignKey: 'bookId', as: 'Book' });
 // Associations Verse ↔ MeditativeVerse
 Verse.hasOne(MeditativeVerse, { foreignKey: 'verseId', as: 'Meditative' });
 MeditativeVerse.belongsTo(Verse, { foreignKey: 'verseId', as: 'Verse' });
+MeditativeVerse.belongsToMany(Theme, {
+  through: "meditative_verse_themes",
+  foreignKey: "meditative_verse_id",
+  otherKey: "theme_id",
+  as: "themes"
+});
+
+Theme.belongsToMany(MeditativeVerse, {
+  through: "meditative_verse_themes",
+  foreignKey: "theme_id",
+  otherKey: "meditative_verse_id",
+  as: "verses"
+});
+
 
 module.exports = {
   sequelize,

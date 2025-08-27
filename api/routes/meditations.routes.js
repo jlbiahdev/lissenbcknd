@@ -8,7 +8,7 @@ router.post('/:verseId/add', meditationsController.insert);
 router.post('/:verseId/remove', meditationsController.remove);
 
 // Ajouter ou modifier un commentaire
-router.put('/:verseId/commentary', meditationsController.updateCommentary);
+router.put('/:verseId/edit', meditationsController.edit);
 
 // Approuver ou désapprouver un commentaire
 router.post('/toggle/:verseId/commentary', meditationsController.toggleCommentaryApproval);

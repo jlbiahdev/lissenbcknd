@@ -24,7 +24,8 @@ export default function VerseListPage() {
   const [error, setError] = useState("");
 
   const [editing, setEditing] = useState(null); // verse object or null
-  const [editForm, setEditForm] = useState({ commentary: "", approved: false });
+  const [editForm, setEditForm] = useState({ commentary: "", approved: false, themes: [] });
+  const [themes, setThemes] = useState([]);
 
   // --------------------- Derived ---------------------
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -73,9 +74,24 @@ export default function VerseListPage() {
       setEditForm({
         commentary: editing.commentary ?? editing.Meditative?.commentary ?? "",
         approved: !!(editing.approved ?? editing.Meditative?.approved),
+        themes: editing.Meditative?.themes ?? editing.themes ?? [],
       });
     }
   }, [editing]);
+  
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const r = await fetch(`${API_BASE}/themes`);
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const data = await r.json();
+        if (!alive) return;
+        setThemes(data);
+      } catch (_) {}
+    })();
+    return () => { alive = false; };
+  }, []);
 
   // --------------------- Handlers ---------------------
   function updateFilter(name, value) {
@@ -116,9 +132,12 @@ export default function VerseListPage() {
     }
   }
 
-  async function saveCommentary() {
+  async function save() {
     if (!editing) return;
-    const payload = { commentary: editForm.commentary.trim(), approved: !!editForm.approved };
+    const payload = { 
+      commentary: editForm.commentary.trim(), 
+      themes: editForm.themes || []
+    };
 
     // optimistic UI
     setRows(prev => prev.map(r =>
@@ -126,14 +145,15 @@ export default function VerseListPage() {
         ? {
             ...r,
             commentary: payload.commentary,
-            approved: payload.approved,
-            Meditative: r.Meditative ? { ...r.Meditative, ...payload } : undefined,
+            Meditative: r.Meditative 
+              ? { ...r.Meditative, commentary: payload.commentary, themes: payload.themes }
+              : { commentary: payload.commentary, themes: payload.themes },
             updated_at: new Date().toISOString()
           }
         : r
     ));
     try {
-      await apiPut(`${API_BASE}/verses/${editing.id}/commentary`, payload);
+      await apiPut(`${API_BASE}/meditations/${editing.id}/edit`, payload);
       setEditing(null);
     } catch (e) {
       alert("Échec de l'enregistrement: " + (e?.message || ""));
@@ -309,6 +329,13 @@ export default function VerseListPage() {
               placeholder="Votre commentaire pastoral…"
             />
 
+            <label>Thèmes</label>
+            <ThemeMulti
+              value={editForm.themes}
+              onChange={(next) => setEditForm(f => ({ ...f, themes: next }))}
+              options={themes}
+            />
+
             <label className="chk">
               <input
                 type="checkbox"
@@ -320,7 +347,7 @@ export default function VerseListPage() {
 
             <div className="modal-actions">
               <button className="btn ghost" onClick={() => setEditing(null)}>Annuler</button>
-              <button className="btn pri" onClick={saveCommentary}>Enregistrer</button>
+              <button className="btn pri" onClick={save}>Enregistrer</button>
             </div>
           </div>
         </Modal>
@@ -380,6 +407,62 @@ function Modal({ title, children, onClose }) {
   );
 }
 
+function ThemeMulti({ value = [], onChange, options = [] }) {
+  const [q, setQ] = useState("");
+  const list = useMemo(() => {
+    const s = q.trim().toLowerCase();
+    let arr = options;
+    if (s) arr = arr.filter(t => (t.name || "").toLowerCase().includes(s));
+
+    // retirer ceux déjà choisis
+    const chosen = new Set((value || []).map(v => (typeof v === "string" ? v : v.name)));
+    return arr.filter(t => !chosen.has(t.name)).slice(0, 8);
+  }, [q, options, value]);
+
+  const add = (name) => {
+    if (!name) return;
+    const n = name.trim();
+    if (!n) return;
+    if ((value || []).some(v => (typeof v === "string" ? v : v.name) === n)) return;
+    onChange([...(value || []), n]);
+    setQ("");
+  };
+  const remove = (idx) => onChange((value || []).filter((_, i) => i !== idx));
+
+  return (
+    <div className="themes-picker">
+      <div className="themes-list">
+        {(value || []).length === 0 && <span className="themes-empty">Aucun thème</span>}
+        {(value || []).map((t, i) => {
+          const label = typeof t === "string" ? t : t.name;
+          return (
+            <span key={`${label}-${i}`} className="theme-chip-lite">
+              {label}
+              <button type="button" className="chip-x" onClick={() => remove(i)} aria-label={`Retirer ${label}`}>×</button>
+            </span>
+          );
+        })}
+      </div>
+      <div className="themes-input">
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(q); } }}
+          placeholder="Ajouter un thème…"
+        />
+        <button type="button" className="btn sm" onClick={() => add(q)}>Ajouter</button>
+      </div>
+      {list.length > 0 && (
+        <div className="theme-suggest">
+          {list.map(t => (
+            <button key={t.id} type="button" className="pill" onClick={() => add(t.name)}>{t.name}</button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // --------------------- Data layer ---------------------
 async function fetchVerses({ filters, page, pageSize, sort }) {
   const params = new URLSearchParams();
@@ -425,23 +508,6 @@ function formatDate(iso) {
   const d = new Date(iso);
   return new Intl.DateTimeFormat(undefined, { year: "numeric", month: "2-digit", day: "2-digit" }).format(d);
 }
-
-function sortArray(arr, by, dir) {
-  const s = [...arr];
-  const m = dir === "desc" ? -1 : 1;
-  s.sort((a, b) => {
-    const va = by === "ref" ? `${a.book}-${a.chapter}-${a.verse}` : a[by];
-    const vb = by === "ref" ? `${b.book}-${b.chapter}-${b.verse}` : b[by];
-    if (va == null && vb == null) return 0;
-    if (va == null) return -1 * m;
-    if (vb == null) return 1 * m;
-    if (typeof va === "boolean") return (Number(va) - Number(vb)) * m;
-    if (typeof va === "number") return (va - vb) * m;
-    return String(va).localeCompare(String(vb)) * m;
-  });
-  return s;
-}
-function mockDelay(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 function useLockBodyScroll() {
   useEffect(() => {
