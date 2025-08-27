@@ -11,7 +11,7 @@ router.post('/:verseId/remove', meditationsController.remove);
 router.put('/:verseId/edit', meditationsController.edit);
 
 // Approuver ou désapprouver un commentaire
-router.post('/toggle/:verseId/commentary', meditationsController.toggleCommentaryApproval);
+router.post('/:verseId/approve', meditationsController.toggleApproval);
 
 // Ajouter des thèmes à une méditation
 router.post('/:verseId/themes', meditationsController.addTheme);

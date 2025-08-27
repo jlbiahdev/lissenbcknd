@@ -4,7 +4,6 @@ import "./styles/index.css";
 
 import Dashboard from "./pages/Dashboard.jsx";
 import VerseListPage from "./pages/VerseListPage.jsx";
-import VerseDetailPage from "./pages/VerseDetailPage.jsx";
 import CommentaryQueue from "./pages/CommentaryQueue.jsx";
 import ThemeListPage from "./pages/ThemeListPage";
 
@@ -27,7 +26,6 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/verses" element={<VerseListPage />} />
-          <Route path="/verses/:id" element={<VerseDetailPage />} />
           <Route path="/commentary-queue" element={<CommentaryQueue />} />
           <Route path="/themes" element={<ThemeListPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />

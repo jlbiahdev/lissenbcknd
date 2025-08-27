@@ -25,12 +25,14 @@ async function remove(req, res) {
   }
 }
 
-async function toggleCommentaryApproval(req, res) {
+async function toggleApproval(req, res) {
   const { verseId } = req.params;
   try {
-    const result = await meditationService.toggleCommentaryApproval(verseId);
+    console.log('Toggling approval for meditation:', verseId);
+    const result = await meditationService.toggleApproval(verseId);
     res.json(result);
   } catch (error) {
+    console.error('Error toggling approval:', error);
     res.status(400).json({ error: error.message });
   }
 }
@@ -109,7 +111,7 @@ async function getByBookChapterVerse(req, res) {
 
 module.exports = {
   insert,
-  toggleCommentaryApproval,
+  toggleApproval,
   edit,
   addTheme,
   remove,

@@ -24,7 +24,7 @@ export default function VerseListPage() {
   const [error, setError] = useState("");
 
   const [editing, setEditing] = useState(null); // verse object or null
-  const [editForm, setEditForm] = useState({ commentary: "", approved: false, themes: [] });
+  const [editForm, setEditForm] = useState({ commentary: "", themes: [] });
   const [themes, setThemes] = useState([]);
 
   // --------------------- Derived ---------------------
@@ -73,7 +73,6 @@ export default function VerseListPage() {
     if (editing) {
       setEditForm({
         commentary: editing.commentary ?? editing.Meditative?.commentary ?? "",
-        approved: !!(editing.approved ?? editing.Meditative?.approved),
         themes: editing.Meditative?.themes ?? editing.themes ?? [],
       });
     }
@@ -157,6 +156,32 @@ export default function VerseListPage() {
       setEditing(null);
     } catch (e) {
       alert("Échec de l'enregistrement: " + (e?.message || ""));
+    }
+  }
+
+  async function approveVerse(verse) {
+    // UI optimiste
+    setRows(prev => prev.map(r =>
+      r.id === verse.id
+        ? {
+            ...r,
+            is_meditative: true,
+            Meditative: r.Meditative ? { ...r.Meditative, approved: true } : { approved: true }
+          }
+        : r
+    ));
+    try {
+      console.log("Approving verse:", verse);
+      await apiPost(`${API_BASE}/meditations/${verse.id}/approve`, {});
+      setEditing(null);
+    } catch (e) {
+      // rollback si échec
+      setRows(prev => prev.map(r =>
+        r.id === verse.id
+          ? { ...r, Meditative: verse.Meditative ?? null, is_meditative: !!(verse.is_meditative ?? verse.Meditative) }
+          : r
+      ));
+      alert("Échec de l’approbation : " + (e?.message || ""));
     }
   }
 
@@ -287,7 +312,6 @@ export default function VerseListPage() {
                         <td>{formatDate(upd)}</td>
                         <td className="row-actions">
                           <button className="btn sm" onClick={() => setEditing(v)}>Éditer</button>
-                          <button className="btn sm ghost" onClick={() => window.location.assign(`/verses/${v.id}`)}>Voir</button>
                         </td>
                       </tr>
                     );
@@ -336,18 +360,10 @@ export default function VerseListPage() {
               options={themes}
             />
 
-            <label className="chk">
-              <input
-                type="checkbox"
-                checked={!!editForm.approved}
-                onChange={e => setEditForm(f => ({ ...f, approved: e.target.checked }))}
-              />
-              <span>Approuvé</span>
-            </label>
-
             <div className="modal-actions">
               <button className="btn ghost" onClick={() => setEditing(null)}>Annuler</button>
               <button className="btn pri" onClick={save}>Enregistrer</button>
+              <button className="btn pri" onClick={() => approveVerse(editing)} disabled={!!(editing.approved ?? editing.Meditative?.approved)}>Approuver</button>
             </div>
           </div>
         </Modal>

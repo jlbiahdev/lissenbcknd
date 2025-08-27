@@ -16,14 +16,14 @@ async function remove(verseId) {
   return { success: true };
 }
 
-async function toggleCommentaryApproval(verseId) {
+async function toggleApproval(verseId) {
   const [meditation, created] = await MeditativeVerse.findOrCreate({
     where: { verseId },
-    defaults: { commentApproved: true },
+    defaults: { approved: true },
   });
 
   if (!created) {
-    meditation.commentApproved = !meditation.commentApproved;
+    meditation.approved = !meditation.approved;
     await meditation.save();
   }
 
@@ -203,7 +203,7 @@ async function getByBookChapterVerse(bookId, chapterNum, verseNum) {
 
 module.exports = {
   insert,
-  toggleCommentaryApproval,
+  toggleApproval,
   update,
   addTheme,
   remove,
