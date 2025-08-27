@@ -4,7 +4,6 @@ const sequelize = require("../config/db");
 
 async function getRecentActivity(limit) {
 
-    console.log("Weekly stats:", limit);
 
     // On remonte des 3 “sources d’événements” et on unifie via UNION ALL
     // On joint aux verses/books pour fabriquer un label lisible "Livre ch:v"
@@ -53,7 +52,6 @@ async function getRecentActivity(limit) {
       LIMIT :limit
     `;
 
-    console.log("stats.service:: Fetching recent activity...", sql);
     const rows = await sequelize.query(sql, {
       replacements: { limit },
       type: sequelize.QueryTypes.SELECT,
@@ -66,7 +64,6 @@ async function getRecentActivity(limit) {
       atISO: new Date(r.at).toISOString(),
     }));
 
-    console.log("stats.service:: Recent activity fetched:", out);
     return out;
 }
 

@@ -4,5 +4,6 @@ const biblesController = require('../controllers/bibles.controller');
 
 router.get('/:code/books', biblesController.getBooks);
 router.get('/:code/books/:bookId', biblesController.getBook);
+router.get('/verses', biblesController.getVerses);
 
 module.exports = router;

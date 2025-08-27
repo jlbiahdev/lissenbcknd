@@ -22,7 +22,6 @@ async function toggleCommentaryApproval(verseId) {
     defaults: { commentApproved: true },
   });
 
-  console.log('meditation:', meditation);
   if (!created) {
     meditation.commentApproved = !meditation.commentApproved;
     await meditation.save();

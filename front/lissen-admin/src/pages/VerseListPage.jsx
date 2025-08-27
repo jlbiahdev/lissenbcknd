@@ -2,28 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import "../styles/index.css";
 import { API_BASE } from "../api/client";
 
-/**
- * VerseListPage.jsx — Lissen Admin Front (Vanilla CSS)
- *
- * Features (v1):
- * - Filters: Bible, Book, Chapter, Text search, Meditative (All/Yes/No)
- * - Sortable columns (Ref, Text, Meditative, Approved, Updated)
- * - Pagination w/ page size
- * - Toggle meditative flag (optimistic)
- * - Edit commentary + approval in a modal (optimistic)
- * - Export current filtered list to JSON
- * - Vanilla CSS injected via <style> (no Tailwind)
- *
- * API Integration:
- * - Set USE_MOCK = false to call your backend.
- * - Configure API_BASE if needed (defaults to window.__API_BASE__ || "/api").
- * - Expected endpoints (adjust to your routes):
- *   GET   /verses?bible=&book=&chapter=&q=&isMeditative=&page=&pageSize=&sort=
- *   PATCH /verses/:id { is_meditative }
- *   PUT   /verses/:id/commentary { commentary, approved }
- */
-
-const USE_MOCK = false; // TODO: switch to false when backend is ready
+const USE_MOCK = false;
 
 export default function VerseListPage() {
 
@@ -50,13 +29,16 @@ export default function VerseListPage() {
   // --------------------- Derived ---------------------
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
-  // Books/chapter helpers (basic placeholders; feel free to wire real metadata)
-  const availableBibles = useMemo(() => ["LSG"], []);
-  const availableBooks = useMemo(() =>
-    (
-      USE_MOCK ? MOCK_BOOKS : Array.from(new Set(rows.map(r => r.book)))
-    ).sort(), [rows]
-  );
+  // Bibles / Livres — robustes backend *et* mock
+  const availableBibles = useMemo(() => {
+    const codes = rows.map(r => r.Bible.code).filter(Boolean);
+    return Array.from(new Set(codes));
+  }, [rows]);
+
+  const availableBooks = useMemo(() => {
+    const names = rows.map(r => r.Book.name).filter(Boolean);
+    return Array.from(new Set(names)).sort((a,b)=>String(a).localeCompare(String(b)));
+  }, [rows]);
 
   // --------------------- Effects ---------------------
   useEffect(() => {
@@ -85,10 +67,13 @@ export default function VerseListPage() {
     return () => { isActive = false; };
   }, [filters, page, pageSize, sort.by, sort.dir]);
 
-  // Keep edit form in sync when a new verse opens
+  // Sync modal form
   useEffect(() => {
     if (editing) {
-      setEditForm({ commentary: editing.commentary || "", approved: !!editing.approved });
+      setEditForm({
+        commentary: editing.commentary ?? editing.Meditative?.commentary ?? "",
+        approved: !!(editing.approved ?? editing.Meditative?.approved),
+      });
     }
   }, [editing]);
 
@@ -103,18 +88,24 @@ export default function VerseListPage() {
   }
 
   async function toggleMeditative(verse) {
-    const newVal = !verse.is_meditative;
+    const currentMedit = !!(verse.is_meditative ?? verse.Meditative); // bool ou présence assoc
+    const newVal = !currentMedit;
+
     // optimistic UI
-    setRows(prev => prev.map(r => r.id === verse.id ? { ...r, is_meditative: newVal } : r));
+    setRows(prev => prev.map(r =>
+      r.id === verse.id
+        ? { ...r, is_meditative: newVal, Meditative: newVal ? (r.Meditative || {}) : null }
+        : r
+    ));
     try {
-      if (!USE_MOCK) {
-        await apiPatch(`${API_BASE}/verses/${verse.id}`, { is_meditative: newVal });
-      } else {
-        await mockDelay(250);
-      }
+      await apiPatch(`${API_BASE}/verses/${verse.id}`, { is_meditative: newVal });
     } catch (e) {
       // rollback on error
-      setRows(prev => prev.map(r => r.id === verse.id ? { ...r, is_meditative: !newVal } : r));
+      setRows(prev => prev.map(r =>
+        r.id === verse.id
+          ? { ...r, is_meditative: currentMedit, Meditative: verse.Meditative }
+          : r
+      ));
       alert("Échec de la mise à jour: " + (e?.message || ""));
     }
   }
@@ -124,13 +115,19 @@ export default function VerseListPage() {
     const payload = { commentary: editForm.commentary.trim(), approved: !!editForm.approved };
 
     // optimistic UI
-    setRows(prev => prev.map(r => r.id === editing.id ? { ...r, ...payload, updated_at: new Date().toISOString() } : r));
+    setRows(prev => prev.map(r =>
+      r.id === editing.id
+        ? {
+            ...r,
+            commentary: payload.commentary,
+            approved: payload.approved,
+            Meditative: r.Meditative ? { ...r.Meditative, ...payload } : undefined,
+            updated_at: new Date().toISOString()
+          }
+        : r
+    ));
     try {
-      if (!USE_MOCK) {
-        await apiPut(`${API_BASE}/verses/${editing.id}/commentary`, payload);
-      } else {
-        await mockDelay(400);
-      }
+      await apiPut(`${API_BASE}/verses/${editing.id}/commentary`, payload);
       setEditing(null);
     } catch (e) {
       alert("Échec de l'enregistrement: " + (e?.message || ""));
@@ -138,9 +135,19 @@ export default function VerseListPage() {
   }
 
   function exportJSON() {
-    const exportable = rows.map(({ id, bible, book, chapter, verse, text, is_meditative, commentary, approved }) => ({
-      id, bible, book, chapter, verse, text, is_meditative, commentary: commentary || "", approved: !!approved,
-    }));
+    const exportable = rows.map((r) => {
+      const isMedit = !!(r.is_meditative ?? r.Meditative);
+      const appr = !!(r.approved ?? r.Meditative?.approved);
+      const bookName = r.Book?.name || r.book;
+      const bible = r.Book?.code || r.bible;
+      const chapter = r.chapterNum ?? r.chapter;
+      const verse = r.verseNum ?? r.verse;
+      return {
+        id: r.id, bible, book: bookName, chapter, verse, text: r.text,
+        is_meditative: isMedit, commentary: r.commentary ?? r.Meditative?.commentary ?? "",
+        approved: appr,
+      };
+    });
     const blob = new Blob([JSON.stringify(exportable, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -177,14 +184,21 @@ export default function VerseListPage() {
           <label>Bible</label>
           <select value={filters.bible} onChange={e => updateFilter("bible", e.target.value)}>
             <option value="">Toutes</option>
-            {availableBibles.map(b => <option key={b} value={b}>{b}</option>)}
+            {availableBibles.map((b, i) => <option key={`${b}-${i}`} value={b}>{b}</option>)}
           </select>
         </div>
         <div className="field">
           <label>Livre</label>
-          <input list="book-list" value={filters.book} onChange={e => updateFilter("book", e.target.value)} placeholder="Ex: Psaumes" />
+          <input
+            list="book-list"
+            value={filters.book}
+            onChange={e => updateFilter("book", e.target.value)}
+            placeholder="Ex: Psaumes"
+          />
           <datalist id="book-list">
-            {availableBooks.map(b => <option key={b} value={b} />)}
+            {availableBooks.map((b, i) => (
+              <option key={`${b}-${i}`} value={b} />
+            ))}
           </datalist>
         </div>
         <div className="field">
@@ -229,24 +243,29 @@ export default function VerseListPage() {
                 {rows.length === 0 ? (
                   <tr><td colSpan={6} className="empty">Aucun verset</td></tr>
                 ) : (
-                  rows.map(v => (
-                    <tr key={v.id}>
-                      <td className="ref"><RefCell v={v} /></td>
-                      <td title={v.text} className="text">{truncate(v.text, 180)}</td>
-                      <td>
-                        <label className="switch" aria-label={`Déclarer méditatif: ${v.id}`}>
-                          <input type="checkbox" checked={!!v.is_meditative} onChange={() => toggleMeditative(v)} />
-                          <span className="slider" />
-                        </label>
-                      </td>
-                      <td>{v.approved ? <span className="badge ok">Oui</span> : <span className="badge">Non</span>}</td>
-                      <td>{formatDate(v.updated_at)}</td>
-                      <td className="row-actions">
-                        <button className="btn sm" onClick={() => setEditing(v)}>Éditer</button>
-                        <button className="btn sm ghost" onClick={() => window.location.assign(`/verses/${v.id}`)}>Voir</button>
-                      </td>
-                    </tr>
-                  ))
+                  rows.map(v => {
+                    const isMedit = !!(v.is_meditative ?? v.Meditative);
+                    const isApproved = !!(v.approved ?? v.Meditative?.approved);
+                    const upd = v.updated_at ?? v.Meditative?.updated_at;
+                    return (
+                      <tr key={v.id}>
+                        <td className="ref"><RefCell v={v} /></td>
+                        <td title={v.text} className="text">{truncate(v.text, 180)}</td>
+                        <td>
+                          <label className="switch" aria-label={`Déclarer méditatif: ${v.id}`}>
+                            <input type="checkbox" checked={isMedit} onChange={() => toggleMeditative(v)} />
+                            <span className="slider" />
+                          </label>
+                        </td>
+                        <td>{isApproved ? <span className="badge ok">Oui</span> : <span className="badge">Non</span>}</td>
+                        <td>{formatDate(upd)}</td>
+                        <td className="row-actions">
+                          <button className="btn sm" onClick={() => setEditing(v)}>Éditer</button>
+                          <button className="btn sm ghost" onClick={() => window.location.assign(`/verses/${v.id}`)}>Voir</button>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -277,10 +296,19 @@ export default function VerseListPage() {
         <Modal onClose={() => setEditing(null)} title={<RefCell v={editing} short /> }>
           <div className="form">
             <label>Commentaire</label>
-            <textarea rows={8} value={editForm.commentary} onChange={e => setEditForm(f => ({ ...f, commentary: e.target.value }))} placeholder="Votre commentaire pastoral…" />
+            <textarea
+              rows={8}
+              value={editForm.commentary}
+              onChange={e => setEditForm(f => ({ ...f, commentary: e.target.value }))}
+              placeholder="Votre commentaire pastoral…"
+            />
 
             <label className="chk">
-              <input type="checkbox" checked={!!editForm.approved} onChange={e => setEditForm(f => ({ ...f, approved: e.target.checked }))} />
+              <input
+                type="checkbox"
+                checked={!!editForm.approved}
+                onChange={e => setEditForm(f => ({ ...f, approved: e.target.checked }))}
+              />
               <span>Approuvé</span>
             </label>
 
@@ -312,12 +340,18 @@ function Th({ label, sortKey, sort, onSort }) {
 }
 
 function RefCell({ v, short = false }) {
-  const ref = `${v.bible || ""} ${v.book} ${v.chapter}:${v.verse}`.trim();
+  const bookName = v.Book.name;
+  const bookCode = v.Book.code;
+  const code = v.Bible.code;
+  const ch = v.chapterNum;
+  const ve = v.verseNum;
+  const ref = `${code} ${bookName} ${ch}:${ve}`.trim();
+
   return (
     <span className="refcell" title={ref}>
-      <span className="book">{v.book}</span>{" "}
-      <span className="cv">{v.chapter}:{v.verse}</span>
-      {!short && v.bible ? <span className="bible"> · {v.bible}</span> : null}
+      <span className="book">{bookCode}</span>{" "}
+      <span className="cv">{ch}:{ve}</span>
+      {!short && code ? <span className="bible"> · {code}</span> : null}
     </span>
   );
 }
@@ -342,23 +376,6 @@ function Modal({ title, children, onClose }) {
 
 // --------------------- Data layer ---------------------
 async function fetchVerses({ filters, page, pageSize, sort }) {
-  if (USE_MOCK) {
-    const all = MOCK_DATA;
-    let items = all.filter(v =>
-      (!filters.bible || v.bible === filters.bible) &&
-      (!filters.book || v.book.toLowerCase().includes(filters.book.toLowerCase())) &&
-      (!filters.chapter || String(v.chapter) === String(filters.chapter)) &&
-      (!filters.q || v.text.toLowerCase().includes(filters.q.toLowerCase())) &&
-      (filters.meditative === "all" || (filters.meditative === "yes" ? v.is_meditative : !v.is_meditative))
-    );
-    items = sortArray(items, sort.by, sort.dir);
-    const total = items.length;
-    const start = (page - 1) * pageSize;
-    const paged = items.slice(start, start + pageSize);
-    await mockDelay(300);
-    return { items: paged, total };
-  }
-
   const params = new URLSearchParams();
   if (filters.bible) params.set("bible", filters.bible);
   if (filters.book) params.set("book", filters.book);
@@ -373,7 +390,6 @@ async function fetchVerses({ filters, page, pageSize, sort }) {
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const data = await res.json();
 
-  console.log("Fetched verses:", data);
   return data;
 }
 
@@ -391,11 +407,13 @@ async function apiPut(url, body) {
 
 // --------------------- Utils ---------------------
 function truncate(str, n) { return str && str.length > n ? str.slice(0, n - 1) + "…" : str; }
+
 function formatDate(iso) {
   if (!iso) return "—";
   const d = new Date(iso);
   return new Intl.DateTimeFormat(undefined, { year: "numeric", month: "2-digit", day: "2-digit" }).format(d);
 }
+
 function sortArray(arr, by, dir) {
   const s = [...arr];
   const m = dir === "desc" ? -1 : 1;
@@ -420,31 +438,3 @@ function useLockBodyScroll() {
     return () => { document.body.style.overflow = overflow; };
   }, []);
 }
-
-// --------------------- Mock Data ---------------------
-const MOCK_BOOKS = [
-  "Genèse", "Exode", "Lévitique", "Nombres", "Deutéronome",
-  "Josué", "Juges", "Ruth", "1 Samuel", "2 Samuel", "1 Rois", "2 Rois",
-  "Psaumes", "Proverbes", "Ésaïe", "Jérémie", "Ézéchiel",
-  "Matthieu", "Marc", "Luc", "Jean", "Actes", "Romains"
-];
-
-const MOCK_DATA = Array.from({ length: 120 }).map((_, i) => {
-  const book = MOCK_BOOKS[i % MOCK_BOOKS.length];
-  const chapter = (i % 50) + 1;
-  const verse = (i % 20) + 1;
-  const is_meditative = i % 3 === 0;
-  const approved = i % 5 === 0;
-  return {
-    id: `v_${i + 1}`,
-    bible: ["LSG", "KJV", "S21"][i % 3],
-    book,
-    chapter,
-    verse,
-    text: `Texte d'exemple du verset ${book} ${chapter}:${verse} — « Le Seigneur est mon berger, je ne manquerai de rien. »` ,
-    is_meditative,
-    commentary: is_meditative ? `Commentaire pastoral (mock) #${i + 1}` : "",
-    approved,
-    updated_at: new Date(Date.now() - i * 86400000).toISOString(),
-  };
-});
