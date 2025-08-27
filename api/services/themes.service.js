@@ -1,11 +1,11 @@
 const { Theme } = require("../models");
 const { sequelize } = require("../models");
 
-async function getAllThemes() {
+async function getAll() {
   return await Theme.findAll({ order: [['name', 'ASC']] });
 }
 
-async function addTheme(name) {
+async function add(name) {
   const existing = await Theme.findOne({
     where: sequelize.where(
       sequelize.fn('lower', sequelize.col('name')),
@@ -16,10 +16,31 @@ async function addTheme(name) {
   if (existing) return { alreadyExists: true };
 
   await Theme.create({ name });
+  console.log('Theme added successfully:', name);
   return { added: true };
 }
 
+async function edit(id, newName) {
+  const existing = await Theme.findOne({
+    where: sequelize.where(
+      sequelize.fn('lower', sequelize.col('name')),
+      newName.toLowerCase()
+    )
+  });
+
+  if (existing && existing.id !== id) return { alreadyExists: true };
+
+  const theme = await Theme.findByPk(id);
+  if (!theme) return { notFound: true };
+
+  theme.name = newName;
+  await theme.save();
+  console.log('Theme updated successfully:', newName);
+  return { updated: true };
+}
+
 module.exports = {
-  getAllThemes,
-  addTheme
+  getAll,
+  add,
+  edit
 };

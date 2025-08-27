@@ -35,7 +35,9 @@ CREATE TABLE verses (
 
 -- Table des themes
 CREATE TABLE themes (
-  name TEXT PRIMARY KEY
+  id    SERIAL PRIMARY KEY,
+  name  TEXT NOT NULL,
+  UNIQUE(name)
 );
 
 -- Table des versets méditatifs

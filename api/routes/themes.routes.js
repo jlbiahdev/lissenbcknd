@@ -7,6 +7,9 @@ const themesController = require('../controllers/themes.controller');
 router.get('/', themesController.getThemes);
 
 // Ajouter un thème
-router.post('/', themesController.postTheme);
+router.post('/', themesController.add);
+
+// Modifier un thème
+router.put('/:id', themesController.edit);
 
 module.exports = router;

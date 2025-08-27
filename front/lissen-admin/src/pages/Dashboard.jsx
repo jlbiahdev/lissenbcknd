@@ -60,6 +60,7 @@ export default function Dashboard(){
     { icon: "📚", title: "Études bibliques", sub: "Séries & leçons", to: "/studies", enabled: false },
     { icon: "🙏", title: "Prières", sub: "Thématiques & séries", to: "/prayers", enabled: false },
     { icon: "🎛️", title: "Tous les modules", sub: "Catalogue des features", to: "/modules", enabled: false },
+    { icon: "🏷️", title: "Thèmes", sub: "Gérer les tags", to: "/themes", enabled: true },
   ];
 
   return (
