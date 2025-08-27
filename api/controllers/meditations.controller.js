@@ -1,12 +1,26 @@
 // controllers/meditations.controller.js
 const meditationService = require('../services/meditations.service');
 
-async function toggleApproval(req, res) {
+async function insert(req, res) {
+  console.log('Inserting meditation for verse:', req.params.verseId);
   const { verseId } = req.params;
   try {
-    const result = await meditationService.toggleApproval(verseId);
+    const result = await meditationService.insert(verseId);
     res.json(result);
   } catch (error) {
+    console.error('Error inserting meditation:', error);
+    res.status(400).json({ error: error.message });
+  }
+}
+
+async function remove(req, res) {
+  console.log('Removing meditation for verse:', req.params.verseId);
+  const { verseId } = req.params;
+  try {
+    const result = await meditationService.remove(verseId);
+    res.json(result);
+  } catch (error) {
+    console.error('Error removing meditation:', error);
     res.status(400).json({ error: error.message });
   }
 }
@@ -93,10 +107,11 @@ async function getByBookChapterVerse(req, res) {
 }
 
 module.exports = {
-  toggleApproval,
+  insert,
   toggleCommentaryApproval,
   updateCommentary,
   addTheme,
+  remove,
   removeTheme,
   exportMeditations,
   getByBook,

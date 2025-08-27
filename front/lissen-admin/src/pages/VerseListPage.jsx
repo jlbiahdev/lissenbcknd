@@ -98,7 +98,13 @@ export default function VerseListPage() {
         : r
     ));
     try {
-      await apiPatch(`${API_BASE}/verses/${verse.id}`, { is_meditative: newVal });
+      if (newVal) {
+        console.log("Adding meditation for verse:", verse.id);
+        await apiPost(`${API_BASE}/meditations/${verse.id}/add`, { });
+      } else {
+        console.log("Removing meditation for verse:", verse.id);
+        await apiPost(`${API_BASE}/meditations/${verse.id}/remove`, { });
+      }
     } catch (e) {
       // rollback on error
       setRows(prev => prev.map(r =>
@@ -391,6 +397,12 @@ async function fetchVerses({ filters, page, pageSize, sort }) {
   const data = await res.json();
 
   return data;
+}
+
+async function apiPost(url, body) {
+  const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
 }
 
 async function apiPatch(url, body) {

@@ -1,19 +1,19 @@
-// services/meditations.service.js
 const { MeditativeVerse, Book, Theme, Verse } = require('../models');
 const { formatToExport, formatToView } = require('../helpers/exportFormatter');
 
-async function toggleApproval(verseId) {
-  const [meditation, created] = await MeditativeVerse.findOrCreate({
-    where: { verseId },
-    defaults: { verseApproved: true },
+async function insert(verseId) {
+  const meditation = await MeditativeVerse.create({
+    verseId,
+    verseApproved: true,
   });
-
-  if (!created) {
-    meditation.verseApproved = !meditation.verseApproved;
-    await meditation.save();
-  }
-
   return meditation;
+}
+
+async function remove(verseId) {
+  const meditation = await MeditativeVerse.findOne({ where: { verseId } });
+  if (!meditation) throw new Error('Meditation not found');
+  await meditation.destroy();
+  return { success: true };
 }
 
 async function toggleCommentaryApproval(verseId) {
@@ -138,10 +138,11 @@ async function getByBookChapterVerse(bookId, chapterNum, verseNum) {
 }
 
 module.exports = {
-  toggleApproval,
+  insert,
   toggleCommentaryApproval,
   updateCommentary,
   addTheme,
+  remove,
   removeTheme,
   exportMeditations,
   getByBook,

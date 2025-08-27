@@ -4,7 +4,8 @@ const router = express.Router();
 const meditationsController = require('../controllers/meditations.controller');
 
 // Approuver ou désapprouver une méditation
-router.post('/:verseId/toggle', meditationsController.toggleApproval);
+router.post('/:verseId/add', meditationsController.insert);
+router.post('/:verseId/remove', meditationsController.remove);
 
 // Ajouter ou modifier un commentaire
 router.put('/:verseId/commentary', meditationsController.updateCommentary);

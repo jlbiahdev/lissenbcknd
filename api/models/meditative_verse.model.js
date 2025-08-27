@@ -29,10 +29,11 @@ const MeditativeVerse = sequelize.define("MeditativeVerse", {
     field: "approved",
   },
   // horodatages
-  createdAt: { type: DataTypes.DATE, allowNull: false, field: "created_at" },
-  updatedAt: { type: DataTypes.DATE, allowNull: false, field: "updated_at" },
-  commentaryUpdatedAt: { type: DataTypes.DATE, allowNull: true, field: "commentary_updated_at" },
-}, {
+  createdAt: { type: DataTypes.DATE, allowNull: false, field: "created_at", defaultValue: DataTypes.NOW },
+  updatedAt: { type: DataTypes.DATE, allowNull: false, field: "updated_at", defaultValue: DataTypes.NOW },
+  commentaryUpdatedAt: { type: DataTypes.DATE, allowNull: true, field: "commentary_updated_at", },
+},
+{
   tableName: "meditative_verses",
   freezeTableName: true,
   timestamps: true,            // mappe createdAt/updatedAt
