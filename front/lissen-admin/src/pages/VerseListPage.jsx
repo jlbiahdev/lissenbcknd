@@ -159,31 +159,37 @@ export default function VerseListPage() {
     }
   }
 
-  async function approveVerse(verse) {
+  async function toggleApproveVerse(verse) {
+    const currentlyApproved = !!(verse.approved ?? verse.Meditative?.approved);
+
     // UI optimiste
     setRows(prev => prev.map(r =>
       r.id === verse.id
         ? {
             ...r,
             is_meditative: true,
-            Meditative: r.Meditative ? { ...r.Meditative, approved: true } : { approved: true }
+            Meditative: r.Meditative
+              ? { ...r.Meditative, approved: !currentlyApproved }
+              : { approved: !currentlyApproved }
           }
         : r
     ));
+
     try {
-      console.log("Approving verse:", verse);
+      console.log("Approving verse:", verse.id);
       await apiPost(`${API_BASE}/meditations/${verse.id}/approve`, {});
       setEditing(null);
     } catch (e) {
       // rollback si échec
       setRows(prev => prev.map(r =>
         r.id === verse.id
-          ? { ...r, Meditative: verse.Meditative ?? null, is_meditative: !!(verse.is_meditative ?? verse.Meditative) }
+          ? { ...r, Meditative: verse.Meditative ?? null }
           : r
       ));
-      alert("Échec de l’approbation : " + (e?.message || ""));
+      alert("Échec de l’opération : " + (e?.message || ""));
     }
   }
+
 
   function exportJSON() {
     const exportable = rows.map((r) => {
@@ -363,7 +369,9 @@ export default function VerseListPage() {
             <div className="modal-actions">
               <button className="btn ghost" onClick={() => setEditing(null)}>Annuler</button>
               <button className="btn pri" onClick={save}>Enregistrer</button>
-              <button className="btn pri" onClick={() => approveVerse(editing)} disabled={!!(editing.approved ?? editing.Meditative?.approved)}>Approuver</button>
+              <button 
+              className={`btn ${editing.Meditative?.approved ? "danger" : "success"}`}
+              onClick={() => toggleApproveVerse(editing)} >{editing.Meditative?.approved ? "Unapprove" : "Approve"}</button>
             </div>
           </div>
         </Modal>
