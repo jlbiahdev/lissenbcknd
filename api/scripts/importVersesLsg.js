@@ -22,7 +22,6 @@ async function format() {
   for (const testament of data.testaments) {
     for (const book of testament.books) {
       const bookId = books.find(b => b.name.toUpperCase() === book.name.toUpperCase()).id;
-      // console.log('bookCode', bookCode)
       for (const chapter of book.chapters) {
         for (const verse of chapter.verses) {
           result.push({
@@ -37,7 +36,6 @@ async function format() {
     }
   }
 
-  // console.log('result', result)
   return result;
   } catch (err) {
     console.error('❌ Erreur chargement versets:', err);

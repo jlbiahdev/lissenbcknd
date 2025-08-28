@@ -16,7 +16,6 @@ async function add(name) {
   if (existing) return { alreadyExists: true };
 
   await Theme.create({ name });
-  console.log('Theme added successfully:', name);
   return { added: true };
 }
 
@@ -35,7 +34,6 @@ async function edit(id, newName) {
 
   theme.name = newName;
   await theme.save();
-  console.log('Theme updated successfully:', newName);
   return { updated: true };
 }
 

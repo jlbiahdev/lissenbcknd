@@ -25,7 +25,6 @@ async function getBook(req, res) {
 async function getVerses(req, res) {
   try {
     const { bible, book, chapter, textLike, isMeditative, isApproved } = req.query;
-    console.log("getVerses query:", req.query);
     const items = await biblesService.getVerses(bible, book, chapter, textLike, isMeditative, isApproved);
 
     res.json({

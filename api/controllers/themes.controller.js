@@ -12,7 +12,6 @@ async function getThemes(req, res) {
 
 async function add(req, res) {
   try {
-    console.log('Adding theme:', req.body.name);
     const raw = req.body.name;
     if (!raw || typeof raw !== 'string') {
       return res.status(400).json({ error: 'Nom de thème invalide' });

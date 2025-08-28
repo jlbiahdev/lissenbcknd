@@ -2,7 +2,6 @@
 const meditationService = require('../services/meditations.service');
 
 async function insert(req, res) {
-  console.log('Inserting meditation for verse:', req.params.verseId);
   const { verseId } = req.params;
   try {
     const result = await meditationService.insert(verseId);
@@ -14,7 +13,6 @@ async function insert(req, res) {
 }
 
 async function remove(req, res) {
-  console.log('Removing meditation for verse:', req.params.verseId);
   const { verseId } = req.params;
   try {
     const result = await meditationService.remove(verseId);
@@ -28,7 +26,6 @@ async function remove(req, res) {
 async function toggleApproval(req, res) {
   const { verseId } = req.params;
   try {
-    console.log('Toggling approval for meditation:', verseId);
     const result = await meditationService.toggleApproval(verseId);
     res.json(result);
   } catch (error) {

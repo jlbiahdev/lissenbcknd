@@ -57,12 +57,10 @@ async function getVerses(bible, bookNameLike, chapter, textLike, isMeditative, i
     where.chapterNum = chapter;
   }
 
-  console.log("getVerses textLike:", textLike);
   if (textLike) {
     where.text = { [Op.iLike]: `%${textLike}%` };
   }
 
-  console.log("getVerses where:", where);
   // base query : Verse + Book + MeditativeVerse
   const { rows, count } = await Verse.findAndCountAll({
     where,

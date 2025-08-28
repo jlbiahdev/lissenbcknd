@@ -2,9 +2,6 @@ function formatToExport(meditations) {
   return meditations.map(meditation => {
     const verse = meditation.verse;
 
-    // console.log('meditation.verse:', meditation.verse);
-    // console.log('meditation.Themes:', meditation.Themes);
-    // console.log('verse.Book', verse.Book);
     return {
       id: verse.id,
       ref: `${verse.Book.name} ${verse.chapterNum}:${verse.verseNum}`,
