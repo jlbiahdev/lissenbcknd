@@ -28,7 +28,7 @@ export default function VerseListPage() {
   const [themes, setThemes] = useState([]);
 
   // --------------------- Derived ---------------------
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  // const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   // Bibles / Livres — robustes backend *et* mock
   const availableBibles = useMemo(() => {
@@ -40,6 +40,14 @@ export default function VerseListPage() {
     const names = rows.map(r => r.Book.name).filter(Boolean);
     return Array.from(new Set(names)).sort((a,b)=>String(a).localeCompare(String(b)));
   }, [rows]);
+
+  const pageRows = useMemo(() => {
+  const start = (page - 1) * pageSize;
+  const end = start + pageSize;
+  return rows.slice(start, end);
+}, [rows, page, pageSize]);
+
+const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   // --------------------- Effects ---------------------
   useEffect(() => {
@@ -66,7 +74,7 @@ export default function VerseListPage() {
     }
     load();
     return () => { isActive = false; };
-  }, [filters, page, pageSize, sort.by, sort.dir]);
+  }, [filters, sort.by, sort.dir]);
 
   // Sync modal form
   useEffect(() => {
@@ -297,10 +305,10 @@ export default function VerseListPage() {
                 </tr>
               </thead>
               <tbody>
-                {rows.length === 0 ? (
+                {pageRows.length === 0 ? (
                   <tr><td colSpan={6} className="empty">Aucun verset</td></tr>
                 ) : (
-                  rows.map(v => {
+                  pageRows.map(v => {
                     const isMedit = !!(v.is_meditative ?? v.Meditative);
                     const isApproved = !!(v.approved ?? v.Meditative?.approved);
                     const upd = v.updated_at ?? v.Meditative?.updated_at;
@@ -489,22 +497,37 @@ function ThemeMulti({ value = [], onChange, options = [] }) {
 
 // --------------------- Data layer ---------------------
 async function fetchVerses({ filters, page, pageSize, sort }) {
-  const params = new URLSearchParams();
-  if (filters.bible) params.set("bible", filters.bible);
-  if (filters.book) params.set("book", filters.book);
-  if (filters.chapter) params.set("chapter", filters.chapter);
-  if (filters.q) params.set("q", filters.q);
-  if (filters.meditative !== "all") params.set("isMeditative", filters.meditative === "yes" ? "1" : "0");
-  params.set("page", String(page));
-  params.set("pageSize", String(pageSize));
-  params.set("sort", `${sort.by}:${sort.dir}`);
+  const qs = new URLSearchParams();
 
-  const res = await fetch(`${API_BASE}/bibles/verses?${params.toString()}`);
+  if (filters.bible) qs.set("bible", filters.bible);
+  if (filters.book) qs.set("book", filters.book);
+  if (filters.chapter) qs.set("chapter", filters.chapter);
+  if (filters.q) qs.set("q", filters.q);
+  if (filters.meditative !== "all") qs.set("isMeditative", filters.meditative === "yes" ? "1" : "0");
+
+  // Tri
+  qs.set("sort", `${sort.by}:${sort.dir}`);
+
+  const res = await fetch(`${API_BASE}/bibles/verses?${qs.toString()}`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const data = await res.json();
 
+  console.log("Fetched verses:", data);
+
+  // return paginateData(data, page, pageSize);
   return data;
+  // Normalisation des formes communes de réponse
+  // const items = data.items;
+  // let total = data.total;
+  // if (typeof total !== "number") {
+  //   total = items.length;
+  // }
+  // const start = offset;
+  // const end = offset + limit;
+  // console.log("Slicing items for UI:", { start, end });
+  // return { items: items.slice(start, end), total };
 }
+
 
 async function apiPost(url, body) {
   const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });

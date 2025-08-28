@@ -32,7 +32,7 @@ async function getBook(code, bookId) {
   return bible.Books[0];
 }
 
-async function getVerses(bookId, meditative, approved, offset, limit) {
+async function getVerses(bookId, meditative, approved) {
   const where = {};
   if (bookId) where.bookId = bookId;
 
@@ -49,8 +49,6 @@ async function getVerses(bookId, meditative, approved, offset, limit) {
         include: [{ model: Theme, as: "themes" }]
       },
     ],
-    offset,
-    limit,
     order: [["id", "ASC"]],
     distinct: true,
   });

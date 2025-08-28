@@ -3,22 +3,31 @@ const path = require('path');
 const { sequelize, Bible } = require('../models');
 
 async function importBible() {
-  const filePath = path.join(__dirname, '../data/bible.lsg.json');
-  const rawData = fs.readFileSync(filePath, 'utf-8');
-  const bibles = JSON.parse(rawData);
+  try {
+    await sequelize.authenticate();
+    console.log('✅ Connexion DB OK');
+    
+    const filePath = path.join(__dirname, '../data/bible.lsg.json');
+    const rawData = fs.readFileSync(filePath, 'utf-8');
+    const bibles = JSON.parse(rawData);
 
-  for (const bible of bibles) {
-    const [record, created] = await Bible.upsert({
-        code: bible.code,
-        name: bible.name,
-        language: bible.language,
-        editionYear: bible.editionYear
-        }, {
-        returning: false
-    });
+    for (const bible of bibles) {
+      const [record, created] = await Bible.upsert({
+          code: bible.code,
+          name: bible.name,
+          language: bible.language,
+          editionYear: bible.editionYear
+          }, {
+          returning: false
+      });
 
-    console.log(`✅ Version LSG ${created ? "créée" : "déjà existante"}`);
-    }
+      console.log(`✅ Version LSG ${created ? "créée" : "déjà existante"}`);
+      }
+    
+  } catch (error) {
+    console.error('❌ Erreur connexion DB:', error);
+    process.exit(1);
+  }
 }
 
 sequelize.sync().then(() => {

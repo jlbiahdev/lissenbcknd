@@ -24,15 +24,12 @@ async function getBook(req, res) {
 
 async function getVerses(req, res) {
   try {
-    const { page = 1, pageSize = 20, bookId, meditative, approved } = req.query;
-    const offset = (page - 1) * pageSize;
-    const limit = parseInt(pageSize, 10);
-    const items = await biblesService.getVerses(bookId, meditative, approved, offset, limit);
+    const { bookId, meditative, approved } = req.query;
+    const items = await biblesService.getVerses(bookId, meditative, approved);
+
     res.json({
       items,
       total: items.length,
-      page: Number(page),
-      pageSize: Number(pageSize)
     });
   } catch (error) {
     console.error("getVerses error:", error);
