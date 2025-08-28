@@ -69,7 +69,6 @@ export default function Dashboard(){
         <h1 className="title">Tableau de bord</h1>
         <nav className="quick-nav">
           <Link className="btn pri" to="/verses">Gérer les versets</Link>
-          <Link className="btn ghost" to="/commentary-queue">File de commentaires</Link>
           <Link className="btn ghost" to="/settings">Paramètres</Link>
         </nav>
       </header>
@@ -84,7 +83,7 @@ export default function Dashboard(){
             <StatCard label="Total versets" value={stats.total} hint="Toutes versions confondues" />
             <StatCard label="Méditatifs" value={stats.meditatives} hint="Taggés à commenter" tone="accent2" />
             <StatCard label="Approuvés" value={stats.approved} hint="Commentaires validés" tone="ok" />
-            <StatCard label="En attente" value={stats.pending} hint="À commenter ous à relire" />
+            <StatCard label="En attente" value={stats.pending} hint="À commenter ou à relire" />
           </section>
 
           <section className="grid-2">
