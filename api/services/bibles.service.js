@@ -1,5 +1,6 @@
 // services/bibles.service.js
 const { Bible, Book, Verse, MeditativeVerse, Theme } = require('../models');
+const { Op } = require('sequelize');
 
 async function getBooks(code) {
   const bible = await Bible.findOne({
@@ -32,10 +33,36 @@ async function getBook(code, bookId) {
   return bible.Books[0];
 }
 
-async function getVerses(bookId, meditative, approved) {
+async function getVerses(bible, bookNameLike, chapter, textLike, isMeditative, isApproved) {
   const where = {};
-  if (bookId) where.bookId = bookId;
+  if (bookNameLike) {
+    const bookWhere = {
+      name: { [Op.iLike]: `%${bookNameLike}%` }, // iLike pour insensible à la casse
+    };
+    if (bible) {
+      bookWhere.bibleCode = bible;
+    }
+    const books = await Book.findAll({
+      where: bookWhere,
+      attributes: ['id'],
+    });
+    const bookIds = books.map(b => b.id);
+    if (bookIds.length > 0) {
+      where.bookId = bookIds;
+    } else {
+      where.bookId = null; // No matching books
+    }
+  }
+  if (chapter) {
+    where.chapterNum = chapter;
+  }
 
+  console.log("getVerses textLike:", textLike);
+  if (textLike) {
+    where.text = { [Op.iLike]: `%${textLike}%` };
+  }
+
+  console.log("getVerses where:", where);
   // base query : Verse + Book + MeditativeVerse
   const { rows, count } = await Verse.findAndCountAll({
     where,
@@ -55,12 +82,14 @@ async function getVerses(bookId, meditative, approved) {
 
   // filtrage supplémentaire (méditatif/approved) côté JS si besoin
   let items = rows;
-  if (meditative === "1") {
-    items = items.filter(v => v.meditative_verse != null);
+  if (isMeditative !== undefined) {
+    const meditative = Number(isMeditative) === 1;
+    items = items.filter(v => meditative ? v.Meditative != null : v.Meditative == null);
   }
-  if (approved === "1" || approved === "0") {
-    const isApproved = approved === "1";
-    items = items.filter(v => v.meditative_verse?.approved === isApproved);
+
+  if (isApproved !== undefined) {
+    const approved = Number(isApproved) === 1;
+    items = items.filter(v => v.Meditative?.approved === approved);
   }
 
   // Ajoute les bibles à chaque item

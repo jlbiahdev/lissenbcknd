@@ -13,6 +13,7 @@ export default function VerseListPage() {
     chapter: "",
     q: "",
     meditative: "all", // all | yes | no
+    approved: "all", // all | yes | no
   });
   const [sort, setSort] = useState({ by: "ref", dir: "asc" });
   const [page, setPage] = useState(1);
@@ -37,8 +38,15 @@ export default function VerseListPage() {
   }, [rows]);
 
   const availableBooks = useMemo(() => {
-    const names = rows.map(r => r.Book.name).filter(Boolean);
-    return Array.from(new Set(names)).sort((a,b)=>String(a).localeCompare(String(b)));
+    const books = Array.from(
+      new Map(
+      rows
+        .map(r => r.Book && { id: r.Book.id, name: r.Book.name })
+        .filter(Boolean)
+        .map(b => [b.name, b])
+      ).values()
+    );
+    return Array.from(new Set(books)).sort((a, b) => a.id - b.id);
   }, [rows]);
 
   const pageRows = useMemo(() => {
@@ -198,7 +206,6 @@ const totalPages = Math.max(1, Math.ceil(total / pageSize));
     }
   }
 
-
   function exportJSON() {
     const exportable = rows.map((r) => {
       const isMedit = !!(r.is_meditative ?? r.Meditative);
@@ -225,7 +232,7 @@ const totalPages = Math.max(1, Math.ceil(total / pageSize));
   }
 
   function resetFilters() {
-    setFilters({ bible: "", book: "", chapter: "", q: "", meditative: "all" });
+    setFilters({ bible: "", book: "", chapter: "", q: "", meditative: "all", approved: "all" });
     setPage(1);
     setSort({ by: "ref", dir: "asc" });
   }
@@ -262,7 +269,7 @@ const totalPages = Math.max(1, Math.ceil(total / pageSize));
           />
           <datalist id="book-list">
             {availableBooks.map((b, i) => (
-              <option key={`${b}-${i}`} value={b} />
+              <option key={b.id} value={b.name} />
             ))}
           </datalist>
         </div>
@@ -277,6 +284,14 @@ const totalPages = Math.max(1, Math.ceil(total / pageSize));
         <div className="field">
           <label>Méditatif</label>
           <select value={filters.meditative} onChange={e => updateFilter("meditative", e.target.value)}>
+            <option value="all">Tous</option>
+            <option value="yes">Oui</option>
+            <option value="no">Non</option>
+          </select>
+        </div>
+        <div className="field">
+          <label>Approuvé</label>
+          <select value={filters.approved} onChange={e => updateFilter("approved", e.target.value)}>
             <option value="all">Tous</option>
             <option value="yes">Oui</option>
             <option value="no">Non</option>
@@ -496,14 +511,16 @@ function ThemeMulti({ value = [], onChange, options = [] }) {
 }
 
 // --------------------- Data layer ---------------------
-async function fetchVerses({ filters, page, pageSize, sort }) {
+async function fetchVerses({ filters, sort }) {
   const qs = new URLSearchParams();
 
+  console.log("Fetching verses with filters:", filters);
   if (filters.bible) qs.set("bible", filters.bible);
   if (filters.book) qs.set("book", filters.book);
   if (filters.chapter) qs.set("chapter", filters.chapter);
-  if (filters.q) qs.set("q", filters.q);
+  if (filters.q) qs.set("textLike", filters.q);
   if (filters.meditative !== "all") qs.set("isMeditative", filters.meditative === "yes" ? "1" : "0");
+  if (filters.approved !== "all") qs.set("isApproved", filters.approved === "yes" ? "1" : "0");
 
   // Tri
   qs.set("sort", `${sort.by}:${sort.dir}`);
@@ -516,16 +533,6 @@ async function fetchVerses({ filters, page, pageSize, sort }) {
 
   // return paginateData(data, page, pageSize);
   return data;
-  // Normalisation des formes communes de réponse
-  // const items = data.items;
-  // let total = data.total;
-  // if (typeof total !== "number") {
-  //   total = items.length;
-  // }
-  // const start = offset;
-  // const end = offset + limit;
-  // console.log("Slicing items for UI:", { start, end });
-  // return { items: items.slice(start, end), total };
 }
 
 
