@@ -1,16 +1,15 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../config/db");
 
-const Book = sequelize.define("book", {
+const Book = sequelize.define("Book", {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true
   },
-  bibleCode: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    field: "bible_code"
+  number: {
+    type: DataTypes.INTEGER,
+    allowNull: false
   },
   code: {
     type: DataTypes.STRING,
@@ -20,12 +19,23 @@ const Book = sequelize.define("book", {
     type: DataTypes.STRING,
     allowNull: false,
   },
-  testament: {
-    type: DataTypes.ENUM("old", "new"),
+  testamentId: {
+    type: DataTypes.INTEGER,
     allowNull: false,
+    field: "testament_id",
+    references: { model: 'testaments', key: 'id' }
   },
+  chaptersCount: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    field: "chapters_count"
+  },
+  // horodatages
+  createdAt: { type: DataTypes.DATE, allowNull: false, field: "created_at", defaultValue: DataTypes.NOW },
+  updatedAt: { type: DataTypes.DATE, allowNull: false, field: "updated_at", defaultValue: DataTypes.NOW },
 }, {
-  timestamps: false
+  tableName: "books",
+  timestamps: true,
 });
 
 module.exports = Book;

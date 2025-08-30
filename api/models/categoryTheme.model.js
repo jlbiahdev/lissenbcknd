@@ -1,21 +1,18 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../config/db");
 
-const Theme = sequelize.define("Theme", {
+const CategoryTheme = sequelize.define('CategoryTheme', {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: false
   },
-  categoryId: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    field: "category_id",
-    references: { model: 'category_themes', key: 'id' }
-  },
   name: {
     type: DataTypes.STRING,
-    unique: true,
+    allowNull: false
+  },
+  description: {
+    type: DataTypes.TEXT,
     allowNull: false
   },
   keywords: {
@@ -26,9 +23,9 @@ const Theme = sequelize.define("Theme", {
   createdAt: { type: DataTypes.DATE, allowNull: false, field: "created_at", defaultValue: DataTypes.NOW },
   updatedAt: { type: DataTypes.DATE, allowNull: false, field: "updated_at", defaultValue: DataTypes.NOW },
 }, {
-  tableName: 'themes',
-  timestamps: true,
-  freezeTableName: true,
+  tableName: 'category_themes',
+  timestamps: true
 });
 
-module.exports = Theme;
+
+module.exports = CategoryTheme;

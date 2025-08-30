@@ -1,9 +1,176 @@
-[
-  { "name": "Amour de Dieu" },
-  { "name": "Confiance en Dieu" },
-  { "name": "Création et puissance de Dieu" },
-  { "name": "Direction divine" },
-  { "name": "Espérance" },
-  { "name": "Paix intérieure" },
-  { "name": "Repentance" }
-]
+{
+  "categories": [
+  {
+    "id": 1,
+    "name": "Dieu",
+    "description": "Caractère, souveraineté, amour, justice et actions de Dieu dans l’histoire.",
+    "keywords": [ "dieu", "seigneur", "eternel", "yahveh", "adonai" ]
+  },
+  {
+    "id": 2,
+    "name": "Création & Origines",
+    "description": "Origine du monde, de l’humanité et but de la vie selon Dieu.",
+    "keywords": [ "crea", "commencement", "genese", "terre", "ciel" ]
+  },
+  {
+    "id": 3,
+    "name": "Homme & Péché",
+    "description": "La chute, la condition humaine, la responsabilité et le besoin de rédemption.",
+    "keywords": [ "peche", "chute", "tentation", "iniquite", "transgression" ]
+  },
+  {
+    "id": 4,
+    "name": "Exode & Alliance",
+    "description": "Libération, loi donnée à Moïse, et relation de Dieu avec son peuple.",
+    "keywords": [ "exode", "egypte", "pharaon", "alliance", "loi", "moise" ]
+  },
+  {
+    "id": 5,
+    "name": "Promesse & Terre promise",
+    "description": "Espérance, héritage spirituel et accomplissement des promesses de Dieu.",
+    "keywords": [ "promesse", "heritage", "terre promise", "canaan" ]
+  },
+  {
+    "id": 6,
+    "name": "Prophètes & Inspiration",
+    "description": "Révélation, parole inspirée de Dieu, mission des prophètes.",
+    "keywords": [ "prophete", "oracle", "inspire" ]
+  },
+  {
+    "id": 7,
+    "name": "Jésus-Christ",
+    "description": "Vie, enseignements, mort et résurrection du Messie.",
+    "keywords": [ "jesus", "christ", "messie", "fils de lhomme", "fils de dieu" ]
+  },
+  {
+    "id": 8,
+    "name": "Saint-Esprit",
+    "description": "Présence de Dieu, dons spirituels, sanctification et guidance.",
+    "keywords": [ "saint-esprit", "esprit", "paraclet" ]
+  },
+  {
+    "id": 9,
+    "name": "Salut & Grâce",
+    "description": "Rédemption, pardon, justification et vie nouvelle par la grâce.",
+    "keywords": [ "salut", "grace", "pardon", "reconciliation", "justification" ]
+  },
+  {
+    "id": 10,
+    "name": "Nouvelle Alliance",
+    "description": "Accomplissement en Christ, communion directe avec Dieu.",
+    "keywords": [ "nouvelle alliance", "coupe", "sang" ]
+  },
+  {
+    "id": 11,
+    "name": "Foi & Justification",
+    "description": "Confiance en Dieu, obéissance et vie par la foi.",
+    "keywords": [ "foi", "croire", "justification" ]
+  },
+  {
+    "id": 12,
+    "name": "Sanctification & Vie chrétienne",
+    "description": "Transformation intérieure, marche dans l’Esprit et obéissance à Dieu.",
+    "keywords": [ "saintete", "sanctification", "marche" ]
+  },
+  {
+    "id": 13,
+    "name": "Famille & Communauté",
+    "description": "Mariage, relations humaines et vie du peuple de Dieu.",
+    "keywords": [ "famille", "mari", "femme", "eglise", "freres" ]
+  },
+  {
+    "id": 14,
+    "name": "Prière & Adoration",
+    "description": "Dialogue avec Dieu, louange et intimité spirituelle.",
+    "keywords": [ "priere", "louange", "adoration" ]
+  },
+  {
+    "id": 15,
+    "name": "Souffrance, Mort & Espérance",
+    "description": "Épreuves, mort physique, résurrection et espérance future.",
+    "keywords": [ "souffrance", "mort", "epreuve", "resurrection" ]
+  },
+  {
+    "id": 16,
+    "name": "Mission & Témoignage",
+    "description": "Évangélisation, service et témoignage du peuple de Dieu dans le monde.",
+    "keywords": [ "mission", "temoignage", "evangile" ]
+  },
+  {
+    "id": 17,
+    "name": "Monde & Nations",
+    "description": "Rapport du peuple de Dieu avec les nations, justice et paix.",
+    "keywords": [ "monde", "nations", "peuples", "justice" ]
+  },
+  {
+    "id": 18,
+    "name": "Avenir & Espérance",
+    "description": "Royaume de Dieu, vie éternelle et espérance du croyant.",
+    "keywords": [ "royaume", "avenir", "esperance", "vie eternelle" ]
+  },
+  {
+    "id": 19,
+    "name": "Apocalypse & Fin des temps",
+    "description": "Jugement, victoire finale de Dieu et rétablissement de toutes choses.",
+    "keywords": [ "apocalypse", "fin des temps", "jugement" ]
+  },
+  {
+    "id": 20,
+    "name": "Glorification",
+    "description": "Plénitude en Dieu, victoire finale sur le péché et transformation éternelle.",
+    "keywords": [ "glorification", "gloire", "victoire" ]
+  }
+],
+"themes": [
+    { "id": 101, "category_id": 1, "name": "Souveraineté de Dieu", "keywords": [ "seigneur", "eternel", "yahveh", "adonai", "souverain", "trone" ] },
+    { "id": 102, "category_id": 1, "name": "Miséricorde & Justice", "keywords": [ "misericorde", "grace", "justice", "equite", "colere", "compassion" ] },
+
+    { "id": 201, "category_id": 2, "name": "Création du monde", "keywords": [ "crea", "commencement", "terre", "ciel", "etoiles", "lumiere", "tenebres" ] },
+    { "id": 202, "category_id": 2, "name": "Image de Dieu", "keywords": [ "image de dieu", "a notre image", "a notre ressemblance" ] },
+
+    { "id": 301, "category_id": 3, "name": "Tentations & Chute", "keywords": [ "tentation", "peche", "iniquite", "transgression", "tomber", "chute" ] },
+    { "id": 302, "category_id": 3, "name": "Confession & Repentance", "keywords": [ "repentance", "confession", "pardon-moi", "se detourner", "reviens" ] },
+
+    { "id": 401, "category_id": 4, "name": "Pâque & Exode", "keywords": [ "exode", "egypte", "pharaon", "mer rouge", "agneau", "paque" ] },
+    { "id": 402, "category_id": 4, "name": "Alliance mosaïque & Loi", "keywords": [ "alliance", "loi", "table de la loi", "moise", "commandements" ] },
+
+    { "id": 501, "category_id": 5, "name": "Promesse à Abraham", "keywords": [ "promesse", "abraham", "descendance", "etoiles du ciel", "benediction" ] },
+    { "id": 502, "category_id": 5, "name": "Héritage & Terre", "keywords": [ "heritage", "terre promise", "canaan", "partage", "frontieres" ] },
+
+    { "id": 601, "category_id": 6, "name": "Appel des prophètes", "keywords": [ "prophete", "appel", "ainsi parle", "oracle" ] },
+    { "id": 602, "category_id": 6, "name": "Parole inspirée", "keywords": [ "inspire", "parole de dieu", "ecritures" ] },
+
+    { "id": 701, "category_id": 7, "name": "Messie & Royaume", "keywords": [ "messie", "christ", "roi", "royaume de dieu", "fils de david" ] },
+    { "id": 702, "category_id": 7, "name": "Croix & Résurrection", "keywords": [ "croix", "resurrection", "troisieme jour", "tombeau vide", "sang verse" ] },
+
+    { "id": 801, "category_id": 8, "name": "Dons & Fruit de l’Esprit", "keywords": [ "dons", "fruit de lesprit", "amour joie paix", "charismes" ] },
+    { "id": 802, "category_id": 8, "name": "Conduite par l’Esprit", "keywords": [ "conduit", "esprit de verite", "paraclet", "consolateur" ] },
+
+    { "id": 901, "category_id": 9, "name": "Justification par grâce", "keywords": [ "justification", "par la grace", "gratuitement", "impute a justice" ] },
+    { "id": 902, "category_id": 9, "name": "Rédemption & Pardon", "keywords": [ "redemption", "racheter", "pardon", "propitiation" ] },
+
+    { "id": 1001, "category_id": 10, "name": "Cène & Sang de l’Alliance", "keywords": [ "nouvelle alliance", "coupe", "ceci est mon sang", "memoire de moi" ] },
+
+    { "id": 1101, "category_id": 11, "name": "La foi qui sauve", "keywords": [ "foi", "croire", "sans la foi", "credite a justice" ] },
+
+    { "id": 1201, "category_id": 12, "name": "Sainteté de vie", "keywords": [ "saintete", "sanctification", "marche", "mettez a mort", "renouvelez" ] },
+
+    { "id": 1301, "category_id": 13, "name": "Mariage & Famille", "keywords": [ "mari", "femme", "enfants", "famille", "mariage" ] },
+    { "id": 1302, "category_id": 13, "name": "Église & Fraternité", "keywords": [ "eglise", "freres", "corps de christ", "communion" ] },
+
+    { "id": 1401, "category_id": 14, "name": "Prière & Louange", "keywords": [ "priere", "loue", "psaume", "adorer", "chant" ] },
+
+    { "id": 1501, "category_id": 15, "name": "Souffrance & Épreuves", "keywords": [ "souffrance", "epreuve", "affliction", "persecution" ] },
+    { "id": 1502, "category_id": 15, "name": "Mort & Résurrection", "keywords": [ "mort", "sepulcre", "resurrection", "vie immortelle" ] },
+
+    { "id": 1601, "category_id": 16, "name": "Évangélisation & Témoignage", "keywords": [ "evangile", "temoin", "annoncer", "mission", "disciple" ] },
+
+    { "id": 1701, "category_id": 17, "name": "Nations & Mission", "keywords": [ "nations", "peuples", "etrangers", "justice sociale" ] },
+
+    { "id": 1801, "category_id": 18, "name": "Royaume de Dieu", "keywords": [ "royaume de dieu", "esperance", "vie eternelle" ] },
+
+    { "id": 1901, "category_id": 19, "name": "Jugement & Parousie", "keywords": [ "jugement", "parousie", "apocalypse", "sceaux", "bete" ] },
+
+    { "id": 2001, "category_id": 20, "name": "Espérance de gloire", "keywords": [ "gloire", "glorification", "corps glorieux", "victoire finale" ] }
+  ]
+}

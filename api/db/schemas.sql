@@ -1,3 +1,15 @@
+DROP TABLE IF EXISTS public.verse_themes;
+DROP TABLE IF EXISTS public.themes;
+DROP TABLE IF EXISTS public.category_themes;
+DROP TABLE IF EXISTS public.meditation_verses;
+DROP TABLE IF EXISTS public.meditations;
+
+DROP TABLE IF EXISTS public.verses;
+DROP TABLE IF EXISTS public.chapters;
+DROP TABLE IF EXISTS public.books;
+DROP TABLE IF EXISTS public.testaments;
+DROP TABLE IF EXISTS public.bibles;
+
 -- 1. Créer le type ENUM s'il n'existe pas
 DO $$
 BEGIN
@@ -11,64 +23,131 @@ CREATE TABLE bibles (
   code TEXT PRIMARY KEY NOT NULL,
   name TEXT NOT NULL,
   language TEXT NOT NULL,
-  edition_year INTEGER
+  edition_year INTEGER,
+
+  -- horodatages
+  created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at         TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Table des testaments
+CREATE TABLE testaments (
+  id SERIAL PRIMARY KEY,
+  index INTEGER NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  bible_code TEXT NOT NULL REFERENCES bibles(code),
+
+  -- horodatages
+  created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(name, bible_code)
 );
 
 -- Table des livres bibliques
 CREATE TABLE books (
   id SERIAL PRIMARY KEY,
-  bible_code TEXT NOT NULL REFERENCES bibles(code),
+  number INTEGER NOT NULL,
   code TEXT NOT NULL,
   name TEXT NOT NULL,
-  testament enum_books_testament NOT NULL
+  testament_id INTEGER NOT NULL REFERENCES testaments(id),
+  chapters_count INTEGER NOT NULL,
+
+  -- horodatages
+  created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at         TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Table des chapitres
+CREATE TABLE chapters (
+    id SERIAL PRIMARY KEY,
+    number INTEGER NOT NULL,         -- numéro du chapitre dans le livre
+    book_id INTEGER NOT NULL REFERENCES books(id),    -- identifiant du livre (book.id)
+    verses_count INTEGER NOT NULL,   -- nombre de versets dans le chapitre
+   
+  -- horodatages
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (number, book_id)
 );
 
 -- Table des versets bibliques (par Bible) avec id autoincrémenté
 CREATE TABLE verses (
   id SERIAL PRIMARY KEY,
-  book_id INTEGER NOT NULL REFERENCES books(id),
-  chapter_number INTEGER NOT NULL,
+  chapter_id INTEGER REFERENCES chapters(id),
   number INTEGER NOT NULL,
   text TEXT NOT NULL,
-  refs TEXT[]
+  refs TEXT[],
+
+  -- horodatages
+  created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at         TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Table des category_themes
+CREATE TABLE category_themes (
+  id    SERIAL PRIMARY KEY,
+  name  TEXT NOT NULL,
+  description TEXT NOT NULL,
+  keywords TEXT[] NOT NULL,
+
+  -- horodatages
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(name)
 );
 
 -- Table des themes
 CREATE TABLE themes (
-  id    SERIAL PRIMARY KEY,
-  name  TEXT NOT NULL,
+  id BIGINT PRIMARY KEY,
+  category_id BIGINT NOT NULL REFERENCES category_themes(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  keywords TEXT[] NOT NULL,
+
+  -- horodatages
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE(name)
 );
 
 -- Table des versets méditatifs
-CREATE TABLE meditative_verses (
+CREATE TABLE meditations (
   id                 BIGSERIAL PRIMARY KEY,
-  verse_id           INTEGER REFERENCES verses(id) ON DELETE CASCADE,
-  themes             TEXT[],
   commentary         TEXT,
   approved   BOOLEAN NOT NULL DEFAULT FALSE,   -- commentaire approuvé
 
   -- horodatages
-  created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),  -- insertion = « sélectionné comme méditatif »
+  created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
   commentary_updated_at TIMESTAMPTZ
 );
 
-CREATE TABLE meditative_verse_themes (
-  meditative_verse_id BIGINT REFERENCES meditative_verses(id) ON DELETE CASCADE,
-  theme_id INT REFERENCES themes(id) ON DELETE CASCADE,
-  PRIMARY KEY (meditative_verse_id, theme_id)
+CREATE TABLE meditation_verses (
+  meditation_id BIGINT  NOT NULL REFERENCES meditations(id) ON DELETE CASCADE,
+  verse_id      INTEGER NOT NULL REFERENCES verses(id)      ON DELETE CASCADE,
+
+  -- horodatages
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (meditation_id, verse_id),
+  CONSTRAINT uq_meditation_verse UNIQUE (meditation_id, verse_id)
 );
 
--- Un seul enregistrement par verset (si c’est ta règle métier)
-ALTER TABLE meditative_verses
-  ADD CONSTRAINT uq_meditative_verse UNIQUE (verse_id);
+CREATE INDEX idx_meditation_verses_meditation ON meditation_verses (meditation_id);
+CREATE INDEX idx_meditation_verses_verse      ON meditation_verses (verse_id);
+CREATE TABLE verse_themes (
+  verse_id BIGINT REFERENCES verses(id) ON DELETE CASCADE,
+  theme_id INT REFERENCES themes(id) ON DELETE CASCADE,
+
+  -- horodatages
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (verse_id, theme_id)
+);
 
 -- Index pour /stats/weekly
-CREATE INDEX IF NOT EXISTS idx_medv_created_at   ON meditative_verses (created_at);
-CREATE INDEX IF NOT EXISTS idx_medv_comm_upd_at  ON meditative_verses (commentary_updated_at) WHERE commentary_updated_at IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_medv_approved     ON meditative_verses (updated_at) WHERE approved = TRUE;
-CREATE INDEX IF NOT EXISTS idx_medv_verse_id     ON meditative_verses (verse_id);
+CREATE INDEX IF NOT EXISTS idx_med_created_at   ON meditations (created_at);
+CREATE INDEX IF NOT EXISTS idx_med_comm_upd_at  ON meditations (commentary_updated_at) WHERE commentary_updated_at IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_med_approved     ON meditations (updated_at) WHERE approved = TRUE;
 
 -- Trigger: maintained updated_at
 CREATE OR REPLACE FUNCTION trg_touch_updated_at() RETURNS trigger AS $$
@@ -78,7 +157,7 @@ BEGIN
 END $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER medv_touch_updated_at
-BEFORE UPDATE ON meditative_verses
+BEFORE UPDATE ON meditation_verses
 FOR EACH ROW EXECUTE FUNCTION trg_touch_updated_at();
 
 -- Trigger: si le commentaire change → on marque la date ET on désapprouve automatiquement
@@ -92,7 +171,5 @@ BEGIN
 END $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER medv_comment_changed
-BEFORE UPDATE ON meditative_verses
+BEFORE UPDATE ON meditation_verses
 FOR EACH ROW EXECUTE FUNCTION trg_comment_changed();
-
-

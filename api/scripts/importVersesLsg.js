@@ -49,9 +49,21 @@ async function importVerses() {
     const verses = await format();
 
     // Insertion en bulk
-    await Verse.bulkCreate(verses, {
-      ignoreDuplicates: true
-    });
+    for (const verse of verses) {
+      const [rec, isCreated] = await Verse.findOrCreate({
+      where: {
+        bookId: verse.bookId,
+        chapterNum: verse.chapterNum,
+        verseNum: verse.verseNum
+      },
+      defaults: {
+        text: verse.text,
+        refs: verse.refs
+      }
+      });
+      console.log(`✅ Verset ${rec.id} ${isCreated ? 'créé' : 'mis à jour'}`, rec.id);
+      await rec.setThemes(entry.themes || []);
+    }
 
     console.log(`✅ ${verses.length} versets importés`);
     process.exit(0);

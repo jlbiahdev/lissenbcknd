@@ -1,6 +1,8 @@
 {
     "Version": "Louis Segond 1910",
     "Abbreviation": "LSG1910",
+    "language": "fr",
+    "editionYear": 1910,
     "testaments": [
       {
         "id": 1,
@@ -9,6 +11,7 @@
           {
             "id": 1,
             "name": "Genèse",
+            "code": "GEN",
             "chapters": [
               {
                 "number": 1,
@@ -8247,6 +8250,7 @@
           {
             "id": 2,
             "name": "Exode",
+            "code": "EXO",
             "chapters": [
               {
                 "number": 1,
@@ -14864,6 +14868,7 @@
           {
             "id": 3,
             "name": "Lévitique",
+            "code": "LEV",
             "chapters": [
               {
                 "number": 1,
@@ -19517,6 +19522,7 @@
           {
             "id": 4,
             "name": "Nombres",
+            "code": "NBR",
             "chapters": [
               {
                 "number": 1,
@@ -26366,6 +26372,7 @@
           {
             "id": 5,
             "name": "Deutéronome",
+            "code": "DEU",
             "chapters": [
               {
                 "number": 1,
@@ -31824,6 +31831,7 @@
           {
             "id": 6,
             "name": "Josué",
+            "code": "JOS",
             "chapters": [
               {
                 "number": 1,
@@ -35370,6 +35378,7 @@
           {
             "id": 7,
             "name": "Juges",
+            "code": "JDG",
             "chapters": [
               {
                 "number": 1,
@@ -38776,6 +38785,7 @@
           {
             "id": 8,
             "name": "Ruth",
+            "code": "RUT",
             "chapters": [
               {
                 "number": 1,
@@ -39263,6 +39273,7 @@
           {
             "id": 9,
             "name": "1 Samuel",
+            "code": "1SA",
             "chapters": [
               {
                 "number": 1,
@@ -43844,6 +43855,7 @@
           {
             "id": 10,
             "name": "2 Samuel",
+            "code": "2SA",
             "chapters": [
               {
                 "number": 1,
@@ -47702,6 +47714,7 @@
           {
             "id": 11,
             "name": "1 Rois",
+            "code": "1KI",
             "chapters": [
               {
                 "number": 1,
@@ -52272,6 +52285,7 @@
           {
             "id": 12,
             "name": "2 Rois",
+            "code": "2KI",
             "chapters": [
               {
                 "number": 1,
@@ -56319,6 +56333,7 @@
           {
             "id": 13,
             "name": "1 Chroniques",
+            "code": "1CH",
             "chapters": [
               {
                 "number": 1,
@@ -61321,6 +61336,7 @@
           {
             "id": 14,
             "name": "2 Chroniques",
+            "code": "2CH",
             "chapters": [
               {
                 "number": 1,
@@ -66010,6 +66026,7 @@
           {
             "id": 15,
             "name": "Esdras",
+            "code": "EZR",
             "chapters": [
               {
                 "number": 1,
@@ -67515,6 +67532,7 @@
           {
             "id": 16,
             "name": "Néhémie",
+            "code": "NEH",
             "chapters": [
               {
                 "number": 1,
@@ -69711,6 +69729,7 @@
           {
             "id": 17,
             "name": "Esther",
+            "code": "EST",
             "chapters": [
               {
                 "number": 1,
@@ -70647,6 +70666,7 @@
           {
             "id": 18,
             "name": "Job",
+            "code": "JOB",
             "chapters": [
               {
                 "number": 1,
@@ -76777,6 +76797,7 @@
           {
             "id": 19,
             "name": "Psaumes",
+            "code": "PSA",
             "chapters": [
               {
                 "number": 1,
@@ -91892,6 +91913,7 @@
           {
             "id": 20,
             "name": "Proverbes",
+            "code": "PRO",
             "chapters": [
               {
                 "number": 1,
@@ -97447,6 +97469,7 @@
           {
             "id": 21,
             "name": "Ecclésiaste",
+            "code": "ECC",
             "chapters": [
               {
                 "number": 1,
@@ -98827,6 +98850,7 @@
           {
             "id": 22,
             "name": "Cantique des Cantiques",
+            "code": "SNG",
             "chapters": [
               {
                 "number": 1,
@@ -99568,6 +99592,7 @@
           {
             "id": 23,
             "name": "Ésaïe",
+            "code": "ISA",
             "chapters": [
               {
                 "number": 1,
@@ -107345,6 +107370,7 @@
           {
             "id": 24,
             "name": "Jérémie",
+            "code": "JER",
             "chapters": [
               {
                 "number": 1,
@@ -115216,6 +115242,7 @@
           {
             "id": 25,
             "name": "Lamentations de Jérémie",
+            "code": "LAM",
             "chapters": [
               {
                 "number": 1,
@@ -116160,6 +116187,7 @@
           {
             "id": 26,
             "name": "Ézéchiel",
+            "code": "EZK",
             "chapters": [
               {
                 "number": 1,
@@ -123274,6 +123302,7 @@
           {
             "id": 27,
             "name": "Daniel",
+            "code": "DAN",
             "chapters": [
               {
                 "number": 1,
@@ -125298,6 +125327,7 @@
           {
             "id": 28,
             "name": "Osée",
+            "code": "HOS",
             "chapters": [
               {
                 "number": 1,
@@ -126500,6 +126530,7 @@
           {
             "id": 29,
             "name": "Joël",
+            "code": "JOL",
             "chapters": [
               {
                 "number": 1,
@@ -126908,6 +126939,7 @@
           {
             "id": 30,
             "name": "Amos",
+            "code": "AMO",
             "chapters": [
               {
                 "number": 1,
@@ -127722,6 +127754,7 @@
           {
             "id": 31,
             "name": "Abdias",
+            "code": "OBA",
             "chapters": [
               {
                 "number": 1,
@@ -127846,6 +127879,7 @@
           {
             "id": 32,
             "name": "Jonas",
+            "code": "JON",
             "chapters": [
               {
                 "number": 1,
@@ -128145,6 +128179,7 @@
           {
             "id": 33,
             "name": "Michée",
+            "code": "MIC",
             "chapters": [
               {
                 "number": 1,
@@ -128789,6 +128824,7 @@
           {
             "id": 34,
             "name": "Nahum",
+            "code": "NAM",
             "chapters": [
               {
                 "number": 1,
@@ -129057,6 +129093,7 @@
           {
             "id": 35,
             "name": "Habacuc",
+            "code": "HAB",
             "chapters": [
               {
                 "number": 1,
@@ -129386,6 +129423,7 @@
           {
             "id": 36,
             "name": "Sophonie",
+            "code": "ZEP",
             "chapters": [
               {
                 "number": 1,
@@ -129713,6 +129751,7 @@
           {
             "id": 37,
             "name": "Aggée",
+            "code": "HAG",
             "chapters": [
               {
                 "number": 1,
@@ -129931,6 +129970,7 @@
           {
             "id": 38,
             "name": "Zacharie",
+            "code": "ZEC",
             "chapters": [
               {
                 "number": 1,
@@ -131138,6 +131178,7 @@
           {
             "id": 39,
             "name": "Malachie",
+            "code": "MAL",
             "chapters": [
               {
                 "number": 1,
@@ -131473,6 +131514,7 @@
           {
             "id": 1,
             "name": "Matthieu",
+            "code": "MAT",
             "chapters": [
               {
                 "number": 1,
@@ -137282,6 +137324,7 @@
           {
             "id": 2,
             "name": "Marc",
+            "code": "MRK",
             "chapters": [
               {
                 "number": 1,
@@ -140971,6 +141014,7 @@
           {
             "id": 3,
             "name": "Luc",
+            "code": "LUK",
             "chapters": [
               {
                 "number": 1,
@@ -147283,6 +147327,7 @@
           {
             "id": 4,
             "name": "Jean",
+            "code": "JHN",
             "chapters": [
               {
                 "number": 1,
@@ -152032,6 +152077,7 @@
           {
             "id": 5,
             "name": "Actes des Apôtres",
+            "code": "ACT",
             "chapters": [
               {
                 "number": 1,
@@ -157615,6 +157661,7 @@
           {
             "id": 6,
             "name": "Romains",
+            "code": "ROM",
             "chapters": [
               {
                 "number": 1,
@@ -160334,6 +160381,7 @@
           {
             "id": 7,
             "name": "1 Corinthiens",
+            "code": "1CO",
             "chapters": [
               {
                 "number": 1,
@@ -162702,6 +162750,7 @@
           {
             "id": 8,
             "name": "2 Corinthiens",
+            "code": "2CO",
             "chapters": [
               {
                 "number": 1,
@@ -164269,6 +164318,7 @@
           {
             "id": 9,
             "name": "Galates",
+            "code": "GAL",
             "chapters": [
               {
                 "number": 1,
@@ -165124,6 +165174,7 @@
           {
             "id": 10,
             "name": "Éphésiens",
+            "code": "EPH",
             "chapters": [
               {
                 "number": 1,
@@ -166071,6 +166122,7 @@
           {
             "id": 11,
             "name": "Philippiens",
+            "code": "PHP",
             "chapters": [
               {
                 "number": 1,
@@ -166686,6 +166738,7 @@
           {
             "id": 12,
             "name": "Colossiens",
+            "code": "COL",
             "chapters": [
               {
                 "number": 1,
@@ -167266,6 +167319,7 @@
           {
             "id": 13,
             "name": "1 Thessaloniciens",
+            "code": "1TH",
             "chapters": [
               {
                 "number": 1,
@@ -167810,6 +167864,7 @@
           {
             "id": 14,
             "name": "2 Thessaloniciens",
+            "code": "2TH",
             "chapters": [
               {
                 "number": 1,
@@ -168115,6 +168170,7 @@
           {
             "id": 15,
             "name": "1 Timothée",
+            "code": "1TI",
             "chapters": [
               {
                 "number": 1,
@@ -168777,6 +168833,7 @@
           {
             "id": 16,
             "name": "2 Timothée",
+            "code": "2TI",
             "chapters": [
               {
                 "number": 1,
@@ -169268,6 +169325,7 @@
           {
             "id": 17,
             "name": "Tite",
+            "code": "TIT",
             "chapters": [
               {
                 "number": 1,
@@ -169548,6 +169606,7 @@
           {
             "id": 18,
             "name": "Philémon",
+            "code": "PHM",
             "chapters": [
               {
                 "number": 1,
@@ -169700,6 +169759,7 @@
           {
             "id": 19,
             "name": "Hébreux",
+            "code": "HEB",
             "chapters": [
               {
                 "number": 1,
@@ -171620,6 +171680,7 @@
           {
             "id": 20,
             "name": "Jacques",
+            "code": "JAS",
             "chapters": [
               {
                 "number": 1,
@@ -172280,6 +172341,7 @@
           {
             "id": 21,
             "name": "1 Pierre",
+            "code": "1PE",
             "chapters": [
               {
                 "number": 1,
@@ -172932,6 +172994,7 @@
           {
             "id": 22,
             "name": "2 Pierre",
+            "code": "2PE",
             "chapters": [
               {
                 "number": 1,
@@ -173319,6 +173382,7 @@
           {
             "id": 23,
             "name": "1 Jean",
+            "code": "1JN",
             "chapters": [
               {
                 "number": 1,
@@ -174017,6 +174081,7 @@
           {
             "id": 24,
             "name": "2 Jean",
+            "code": "2JN",
             "chapters": [
               {
                 "number": 1,
@@ -174110,6 +174175,7 @@
           {
             "id": 25,
             "name": "3 Jean",
+            "code": "3JN",
             "chapters": [
               {
                 "number": 1,
@@ -174195,6 +174261,7 @@
           {
             "id": 26,
             "name": "Jude",
+            "code": "JUD",
             "chapters": [
               {
                 "number": 1,
@@ -174348,6 +174415,7 @@
           {
             "id": 27,
             "name": "Apocalypse",
+            "code": "REV",
             "chapters": [
               {
                 "number": 1,

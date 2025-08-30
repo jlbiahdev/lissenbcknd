@@ -1,24 +1,30 @@
 require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
-const { Theme, sequelize } = require('../models');
+const { CategoryTheme, Theme, sequelize } = require('../models');
 
 async function importThemes() {
   const filePath = path.join(__dirname, '../data/themes.json');
   const raw = fs.readFileSync(filePath, 'utf-8');
-  const themes = JSON.parse(raw);
+  const data = JSON.parse(raw);
 
   try {
     await sequelize.authenticate();
     console.log('✅ Connexion DB OK');
 
-    for (const theme of themes) {
-      await Theme.findOrCreate({
-        where: { name: theme.name.trim() }
+    for (const category of data.categories) {
+      await CategoryTheme.findOrCreate({
+        where: { id: category.id, name: category.name.trim(), description: category.description.trim(), keywords: category.keywords.map(k => k.trim()) }
       });
     }
 
-    console.log(`✅ ${themes.length} thèmes importés ou déjà existants`);
+    for (const theme of data.themes) {
+      await Theme.findOrCreate({
+        where: { id: theme.id, category_id: theme.category_id, name: theme.name.trim(), keywords: theme.keywords.map(k => k.trim()) }
+      });
+    }
+
+    console.log(`✅ ${data.themes.length} thèmes importés ou déjà existants`);
     process.exit(0);
   } catch (err) {
     console.error('❌ Erreur import themes:', err);
