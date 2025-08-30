@@ -1,4 +1,4 @@
-const { sequelize, Bible, Testament, Book, Chapter } = require('../models');
+const { sequelize, Bible, Testament, Book, Chapter, Verse } = require('../models');
 const fs = require('fs');
 const path = require('path');
 const { Op } = require('sequelize');
@@ -47,9 +47,12 @@ function loadBibleData(bibleCode) {
     }))));
 
     const verses = data.testaments.flatMap(testament => testament.books.flatMap(book => book.chapters.flatMap(chapter => chapter.verses.map(verse => ({
-        id: verse.id,
+        number: verse.id,
         text: verse.text,
-        ref: verse.ref,
+        chapterNum: chapter.number,
+        bookNumber: book.id,
+        testamentIndex: testament.id,
+        bibleCode: bible.code,
     })))));
 
     console.log('Bible data loaded: \nbible', bible, '\ntestaments', testaments, '\nbooks', books.length, '\nchapters', chapters.length, '\nverses', verses.length);
@@ -134,6 +137,54 @@ async function saveChapters(chaptersData) {
     return results;
 }
 
+async function saveVerses(versesData) {
+    console.log('saveVerses')
+    await sequelize.authenticate();
+    const promises = versesData.map(async verseData => {
+        const testament = await Testament.findOne({
+            where: {
+                index: verseData.testamentIndex,
+                bibleCode: verseData.bibleCode
+            }
+        });
+        if (!testament) {
+            throw new Error(`Testament not found for index ${verseData.testamentIndex} and bibleCode ${verseData.bibleCode}`);
+        }
+        const book = await Book.findOne({
+            where: {
+                number: verseData.bookNumber,
+                testamentId: testament.id
+            }
+        });
+        if (!book) {
+            throw new Error(`Book not found for number ${chapterData.bookNumber} and testamentId ${testament.id}`);
+        }
+
+        const chapter = await Chapter.findOne({
+            where: {
+                number: verseData.chapterNum,
+                bookId: book.id
+            }
+        });
+        if (!chapter) {
+            throw new Error(`Chapter not found for number ${verseData.chapterNum} and bookId ${book.id}`);
+        }
+
+        return Verse.upsert({
+            number: verseData.number,
+            text: verseData.text,
+            refs: verseData.refs,
+            chapterId: chapter.id,
+        }, { returning: true });
+    });
+    const results = await Promise.all(promises);
+    results.forEach(([record, created]) => {
+        console.log(record.id, created);
+        console.log(`✅ Verset ${record.id} ${created ? "créé" : "déjà existant"}`);
+    });
+    return results;
+}
+
 async function main() {
     console.log('Loading Bible data...', process.argv);
     const [, , bibleCode, taxonomyPath, outPath = './mapping.json'] = process.argv;
@@ -144,7 +195,7 @@ async function main() {
     await saveTestaments(bibleData.testaments);
     await saveBooks(bibleData.books);
     await saveChapters(bibleData.chapters);
-    // await saveVerses(bibleData.verses);
+    await saveVerses(bibleData.verses);
 }
 
 sequelize.sync().then(() => {

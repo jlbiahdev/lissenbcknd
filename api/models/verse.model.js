@@ -12,14 +12,12 @@ const Verse = sequelize.define("Verse", {
     field: "chapter_id",
     references: { model: 'chapters', key: 'id' }
   },
-  verseNum: {
-    type: DataTypes.INTEGER,
-    field: "number"
-  },
-  text: DataTypes.TEXT,
+  number: { type: DataTypes.INTEGER, allowNull: false },
+  text: { type: DataTypes.TEXT, allowNull: false },
   refs: {
     type: DataTypes.ARRAY(DataTypes.TEXT),
   },
+  
   // horodatages
   createdAt: { type: DataTypes.DATE, allowNull: false, field: "created_at", defaultValue: DataTypes.NOW },
   updatedAt: { type: DataTypes.DATE, allowNull: false, field: "updated_at", defaultValue: DataTypes.NOW },
