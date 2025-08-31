@@ -1,8 +1,14 @@
 // controllers/meditations.controller.js
 const meditationService = require('../services/meditations.service');
 
+function toInt(v) {
+  if (v === undefined || v === null || v === '') return undefined;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : undefined;
+}
+
 async function insert(req, res) {
-  const { verseId } = req.params;
+  const verseId = toInt(req.params.verseId);
   try {
     const result = await meditationService.insert(verseId);
     res.json(result);
@@ -13,7 +19,7 @@ async function insert(req, res) {
 }
 
 async function remove(req, res) {
-  const { verseId } = req.params;
+  const verseId = toInt(req.params.verseId);
   try {
     const result = await meditationService.remove(verseId);
     res.json(result);
@@ -24,7 +30,7 @@ async function remove(req, res) {
 }
 
 async function toggleApproval(req, res) {
-  const { verseId } = req.params;
+  const verseId = toInt(req.params.verseId);
   try {
     const result = await meditationService.toggleApproval(verseId);
     res.json(result);
@@ -35,7 +41,7 @@ async function toggleApproval(req, res) {
 }
 
 async function edit(req, res) {
-  const { verseId } = req.params;
+  const verseId = toInt(req.params.verseId);
   const { commentary, themes } = req.body;
   try {
     const result = await meditationService.update(verseId, commentary, themes);
@@ -47,7 +53,7 @@ async function edit(req, res) {
 }
 
 async function addTheme(req, res) {
-  const { verseId } = req.params;
+  const verseId = toInt(req.params.verseId);
   const { theme } = req.body;
   try {
     const result = await meditationService.addTheme(verseId, theme);
@@ -58,7 +64,8 @@ async function addTheme(req, res) {
 }
 
 async function removeTheme(req, res) {
-  const { verseId, theme } = req.params;
+  const verseId = toInt(req.params.verseId);
+  const theme = req.params.theme; // on garde tel quel (string dans params)
   try {
     const result = await meditationService.removeTheme(verseId, theme);
     res.json(result);
@@ -77,7 +84,7 @@ async function exportMeditations(req, res) {
 }
 
 async function getByBook(req, res) {
-  const { bookId } = req.params;
+  const bookId = toInt(req.params.bookId);
   try {
     const data = await meditationService.getByBook(bookId);
     res.json(data);
@@ -87,7 +94,8 @@ async function getByBook(req, res) {
 }
 
 async function getByBookAndChapter(req, res) {
-  const { bookId, chapterNum } = req.params;
+  const bookId = toInt(req.params.bookId);
+  const chapterNum = toInt(req.params.chapterNum);
   try {
     const data = await meditationService.getByBookAndChapter(bookId, chapterNum);
     res.json(data);
@@ -97,7 +105,9 @@ async function getByBookAndChapter(req, res) {
 }
 
 async function getByBookChapterVerse(req, res) {
-  const { bookId, chapterNum, verseNum } = req.params;
+  const bookId = toInt(req.params.bookId);
+  const chapterNum = toInt(req.params.chapterNum);
+  const verseNum = toInt(req.params.verseNum);
   try {
     const data = await meditationService.getByBookChapterVerse(bookId, chapterNum, verseNum);
     res.json(data);

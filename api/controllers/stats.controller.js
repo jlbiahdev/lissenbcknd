@@ -1,9 +1,9 @@
+// controllers/stats.controller.js
 const service = require('../services/stats.service');
 
 async function getRecentActivity(req, res) {
   try {
-    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 10));
-    const activity = await service.getRecentActivity(limit);
+    const activity = await service.getRecentActivity();
     res.json(activity);
   } catch (error) {
     console.error("stats.controller:: Error fetching recent activity:", error);

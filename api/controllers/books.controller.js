@@ -1,8 +1,14 @@
 // controllers/books.controller.js
 const booksService = require('../services/books.service');
 
+function toInt(v) {
+  if (v === undefined || v === null || v === '') return undefined;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : undefined;
+}
+
 async function getVerses(req, res) {
-  const { bookId } = req.params;
+  const bookId = toInt(req.params.bookId);
 
   try {
     const verses = await booksService.getVerses(bookId);
@@ -13,7 +19,8 @@ async function getVerses(req, res) {
 }
 
 async function getVerse(req, res) {
-  const { bookId, id } = req.params;
+  const bookId = toInt(req.params.bookId);
+  const id = toInt(req.params.id);
 
   try {
     const verse = await booksService.getVerse(bookId, id);
@@ -24,7 +31,8 @@ async function getVerse(req, res) {
 }
 
 async function getChapterVerses(req, res) {
-  const { bookId, chapterNum } = req.params;
+  const bookId = toInt(req.params.bookId);
+  const chapterNum = toInt(req.params.chapterNum);
 
   try {
     const verses = await booksService.getChapterVerses(bookId, chapterNum);
@@ -35,7 +43,9 @@ async function getChapterVerses(req, res) {
 }
 
 async function getVerseInChapter(req, res) {
-  const { bookId, chapterNum, verseNum } = req.params;
+  const bookId = toInt(req.params.bookId);
+  const chapterNum = toInt(req.params.chapterNum);
+  const verseNum = toInt(req.params.verseNum);
 
   try {
     const verse = await booksService.getVerseInChapter(bookId, chapterNum, verseNum);
@@ -46,7 +56,8 @@ async function getVerseInChapter(req, res) {
 }
 
 async function getChapterVersesByCode(req, res) {
-  const { bookCode, chapterNum } = req.params;
+  const bookCode = req.params.bookCode;
+  const chapterNum = toInt(req.params.chapterNum);
 
   try {
     const verses = await booksService.getChapterVersesByCode(bookCode, chapterNum);
@@ -57,7 +68,9 @@ async function getChapterVersesByCode(req, res) {
 }
 
 async function getVerseInChapterByCode(req, res) {
-  const { bookCode, chapterNum, verseNum } = req.params;
+  const bookCode = req.params.bookCode;
+  const chapterNum = toInt(req.params.chapterNum);
+  const verseNum = toInt(req.params.verseNum);
 
   try {
     const verse = await booksService.getVerseInChapterByCode(bookCode, chapterNum, verseNum);
