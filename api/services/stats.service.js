@@ -4,7 +4,7 @@ const { Op } = require('sequelize');
 const sequelize = require("../config/db");
 
 // ------------------------------------------------------------------
-// getRecentActivity(limit)
+// getRecentActivity()
 // - Avant : événements tirés de meditative_verses
 // - Maintenant : on base les événements sur meditations + meditation_verses
 //   * create  : mv.created_at (meditation_verses)
@@ -12,7 +12,7 @@ const sequelize = require("../config/db");
 //   * approve : m.updated_at (meditations) si approved = true
 //   On émet un événement PAR VERSE lié (comme avant).
 // ------------------------------------------------------------------
-async function getRecentActivity(limit) {
+async function getRecentActivity() {
   const sql = `
     WITH ev AS (
       -- Créations : création du lien verse<->meditation
@@ -58,11 +58,9 @@ async function getRecentActivity(limit) {
     JOIN books b    ON b.id = c.book_id
     WHERE e.at IS NOT NULL
     ORDER BY e.at DESC
-    LIMIT :limit
   `;
 
   const rows = await sequelize.query(sql, {
-    replacements: { limit },
     type: sequelize.QueryTypes.SELECT,
   });
 
