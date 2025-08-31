@@ -1,76 +1,110 @@
 const sequelize = require("../config/db");
 
-const Book = require("./book.model");
-const Testament = require("./testament.model");
 const Bible = require("./bible.model");
+const Testament = require("./testament.model");
+const Book = require("./book.model");
 const Chapter = require("./chapters.model");
 const Verse = require("./verse.model");
+
+const Meditation = require("./meditation.model");
 const MeditationVerse = require("./meditationVerse.model");
-const Meditation = require('./meditation.model')
-const Theme = require("./theme.model");
+
 const CategoryTheme = require("./categoryTheme.model");
+const Theme = require("./theme.model");
+const VerseTheme = require("./verseThemes.model");
 
-// Associations Bible ↔ Testament
-Bible.hasMany(Testament, { foreignKey: 'bible_code', as: 'Testaments' });
-
-// Associations Testament ↔ Bible
-Testament.belongsTo(Bible, { foreignKey: 'bible_code', targetKey: 'code', as: 'Bible' });
-
-// Associations Testament ↔ Book
-Testament.hasMany(Book, { foreignKey: 'testament_id', as: 'Books' });
-
-// Associations Book ↔ Testament
-Book.belongsTo(Testament, { foreignKey: 'testament_id', targetKey: 'id', as: 'Testament' });
-
-// Associations Book ↔ Chapter
-Book.hasMany(Chapter, { foreignKey: 'bookId', as: 'Chapters' });
-
-// Associations Book ↔ Verses
-Book.hasMany(Verse, { foreignKey: 'bookId', as: 'Verses' });
-
-// Associations Chapter ↔ Book
-Chapter.belongsTo(Book, { foreignKey: 'bookId', as: 'Book' });
-
-Verse.belongsTo(Book, { foreignKey: 'bookId', as: 'Book' });
-
-// Associations Verse ↔ Meditation
-Verse.belongsToMany(Meditation, {
-  through: MeditationVerse,
-  foreignKey: "verse_id",
-  otherKey: "meditation_id",
-  as: "Meditations",
+// -------------------- Bible ↔ Testament --------------------
+Bible.hasMany(Testament, {
+  foreignKey: "bibleCode",     // attribut du modèle Testament
+  sourceKey: "code",
+  as: "testaments",
+});
+Testament.belongsTo(Bible, {
+  foreignKey: "bibleCode",
+  targetKey: "code",
+  as: "bible",
 });
 
+// -------------------- Testament ↔ Book --------------------
+Testament.hasMany(Book, {
+  foreignKey: "testamentId",   // attribut du modèle Book
+  sourceKey: "id",
+  as: "books",
+});
+Book.belongsTo(Testament, {
+  foreignKey: "testamentId",
+  targetKey: "id",
+  as: "testament",
+});
+
+// -------------------- Book ↔ Chapter --------------------
+Book.hasMany(Chapter, {
+  foreignKey: "bookId",        // attribut du modèle Chapter
+  sourceKey: "id",
+  as: "chapters",
+});
+Chapter.belongsTo(Book, {
+  foreignKey: "bookId",
+  targetKey: "id",
+  as: "book",
+});
+
+// -------------------- Chapter ↔ Verse --------------------
+Chapter.hasMany(Verse, {
+  foreignKey: "chapterId",     // attribut du modèle Verse
+  sourceKey: "id",
+  as: "verses",
+});
+Verse.belongsTo(Chapter, {
+  foreignKey: "chapterId",
+  targetKey: "id",
+  as: "chapter",
+});
+
+// -------------------- Verse ↔ Theme (pivot VerseTheme) --------------------
+Verse.belongsToMany(Theme, {
+  through: VerseTheme,
+  foreignKey: "verse_id",
+  otherKey: "theme_id",
+  as: "themes",
+});
+Theme.belongsToMany(Verse, {
+  through: VerseTheme,
+  foreignKey: "theme_id",
+  otherKey: "verse_id",
+  as: "verses",
+});
+
+// -------------------- CategoryTheme ↔ Theme --------------------
+CategoryTheme.hasMany(Theme, {
+  foreignKey: "categoryId",    // attribut du modèle Theme
+  sourceKey: "id",
+  as: "themes",
+});
+Theme.belongsTo(CategoryTheme, {
+  foreignKey: "categoryId",
+  targetKey: "id",
+  as: "category",
+});
+
+// -------------------- Meditation ↔ Verse (pivot MeditationVerse) --------------------
 Meditation.belongsToMany(Verse, {
   through: MeditationVerse,
   foreignKey: "meditation_id",
   otherKey: "verse_id",
-  as: "Verses",
+  as: "verses",
 });
-
-// Verse ↔ Thèmes (si ce n’est pas déjà fait)
-Verse.belongsToMany(Theme, {
-  through: "verse_themes",
+Verse.belongsToMany(Meditation, {
+  through: MeditationVerse,
   foreignKey: "verse_id",
-  otherKey: "theme_id",
-  as: "Themes",
-});
-Theme.belongsToMany(Verse, {
-  through: "verse_themes",
-  foreignKey: "theme_id",
-  otherKey: "verse_id",
-  as: "Verses"
+  otherKey: "meditation_id",
+  as: "meditations",
 });
 
-// Liens directs pour naviguer/charger vite
-Meditation.hasMany(MeditationVerse, { as: "Links", foreignKey: "meditation_id" });
-MeditationVerse.belongsTo(Meditation, { foreignKey: "meditation_id" });
-MeditationVerse.belongsTo(Verse,      { foreignKey: "verse_id", as: 'Verse' });
-
-// Associations
-CategoryTheme.hasMany(Theme, { foreignKey: 'category_id', as: 'Themes' });
-Theme.belongsTo(CategoryTheme, { foreignKey: 'category_id', as: 'Category' });
-
+// (facultatif) Liens directs sur le pivot pour naviguer/charger vite
+Meditation.hasMany(MeditationVerse, { foreignKey: "meditation_id", as: "links" });
+MeditationVerse.belongsTo(Meditation, { foreignKey: "meditation_id", as: "meditation" });
+MeditationVerse.belongsTo(Verse, { foreignKey: "verse_id", as: "verse" });
 
 module.exports = {
   sequelize,
@@ -83,4 +117,5 @@ module.exports = {
   MeditationVerse,
   CategoryTheme,
   Theme,
+  VerseTheme,
 };

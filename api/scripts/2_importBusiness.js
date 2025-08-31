@@ -1,11 +1,8 @@
 const { sequelize, Bible, Testament, Book, Chapter, Verse } = require('../models');
 const fs = require('fs');
 const path = require('path');
-const { Op } = require('sequelize');
 
-const biblePath = path.join(__dirname, '../data/initial/lsg1910.json');
 // const taxonomyPath = path.join(__dirname, '../data/taxonomy.json');
-
 // const taxonomy = loadJson(taxonomyPath);
 
 function loadJson(filePath) { return JSON.parse(fs.readFileSync(filePath, 'utf8')); }
@@ -14,9 +11,10 @@ function getBibleFilePath(bibleCode) {
     return path.join(__dirname, '../data/initial/', `${bibleCode.toLowerCase()}.json`);
 }
 
+// Charger les données de la Bible depuis la base de données
 function loadBibleData(bibleCode) {
-    // Charger les données de la Bible depuis la base de données
     const data = loadJson(getBibleFilePath(bibleCode));
+
     const bible = {
         code: data.Abbreviation.toUpperCase(),
         name: data.Version,
@@ -189,7 +187,6 @@ async function main() {
     console.log('Loading Bible data...', process.argv);
     const [, , bibleCode, taxonomyPath, outPath = './mapping.json'] = process.argv;
     const bibleData = loadBibleData(bibleCode);
-    console.log('Bible data loaded successfully');
 
     await saveBible(bibleData.bible);
     await saveTestaments(bibleData.testaments);
@@ -199,7 +196,7 @@ async function main() {
 }
 
 sequelize.sync().then(() => {
-  main()
-    .then(() => { console.log('✅ Done.'); process.exit(0); })
-    .catch((err) => { console.error('❌ Erreur lors de l’import:', err); process.exit(1); });
+    main()
+        .then(() => { console.log('✅ Done.'); process.exit(0); })
+        .catch((err) => { console.error('❌ Erreur lors de l’import:', err); process.exit(1); });
 });
