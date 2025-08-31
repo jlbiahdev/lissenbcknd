@@ -1,147 +1,180 @@
-const { Verse, MeditativeVerse } = require('../models');
+// services/stats.service.js
+const { Verse } = require('../models');
 const { Op } = require('sequelize');
 const sequelize = require("../config/db");
 
+// ------------------------------------------------------------------
+// getRecentActivity(limit)
+// - Avant : événements tirés de meditative_verses
+// - Maintenant : on base les événements sur meditations + meditation_verses
+//   * create  : mv.created_at (meditation_verses)
+//   * comment : m.commentary_updated_at (meditations) si commentary non vide
+//   * approve : m.updated_at (meditations) si approved = true
+//   On émet un événement PAR VERSE lié (comme avant).
+// ------------------------------------------------------------------
 async function getRecentActivity(limit) {
-
-
-    // On remonte des 3 “sources d’événements” et on unifie via UNION ALL
-    // On joint aux verses/books pour fabriquer un label lisible "Livre ch:v"
-    const sql = `
-      WITH ev AS (
-        -- Créations (sélectionnés comme méditatifs)
-        SELECT
-          mv.verse_id            AS verse_id,
-          'create'               AS ev_type,
-          mv.created_at          AS at
-        FROM meditative_verses mv
-
-        UNION ALL
-
-        -- Commentaires (saisis/modifiés)
-        SELECT
-          mv.verse_id            AS verse_id,
-          'comment'              AS ev_type,
-          mv.commentary_updated_at AS at
-        FROM meditative_verses mv
-        WHERE mv.commentary_updated_at IS NOT NULL
-          AND NULLIF(TRIM(mv.commentary), '') IS NOT NULL
-
-        UNION ALL
-
-        -- Approbations (dernière mise à jour approuvée)
-        SELECT
-          mv.verse_id            AS verse_id,
-          'approve'              AS ev_type,
-          mv.updated_at          AS at
-        FROM meditative_verses mv
-        WHERE mv.approved = TRUE
-      )
+  const sql = `
+    WITH ev AS (
+      -- Créations : création du lien verse<->meditation
       SELECT
-        e.ev_type,
-        e.at,
-        v.id           AS verse_id,
-        b.name         AS book_name,
-        v.chapter_number  AS chapter_num,
-        v.number    AS verse_num
-      FROM ev e
-      JOIN verses v ON v.id = e.verse_id
-      JOIN books  b ON b.id = v.book_id
-      WHERE e.at IS NOT NULL
-      ORDER BY e.at DESC
-      LIMIT :limit
-    `;
+        mv.verse_id AS verse_id,
+        'create'    AS ev_type,
+        mv.created_at AS at
+      FROM meditation_verses mv
 
-    const rows = await sequelize.query(sql, {
-      replacements: { limit },
-      type: sequelize.QueryTypes.SELECT,
-    });
+      UNION ALL
 
-    const out = rows.map(r => ({
-      id: `${r.ev_type}_${r.verse_id}_${new Date(r.at).getTime()}`,
-      type: r.ev_type, // 'create' | 'comment' | 'approve'
-      label: `${r.book_name} ${r.chapter_num}:${r.verse_num} — ${r.ev_type === 'create' ? 'créé' : r.ev_type === 'comment' ? 'commenté' : 'approuvé'}`,
-      atISO: new Date(r.at).toISOString(),
-    }));
+      -- Commentaires : MAJ du commentary d'une meditation (répliqué sur chaque vers lié)
+      SELECT
+        mv.verse_id AS verse_id,
+        'comment'   AS ev_type,
+        m.commentary_updated_at AS at
+      FROM meditations m
+      JOIN meditation_verses mv ON mv.meditation_id = m.id
+      WHERE m.commentary_updated_at IS NOT NULL
+        AND NULLIF(TRIM(m.commentary), '') IS NOT NULL
 
-    return out;
+      UNION ALL
+
+      -- Approbations : approved = TRUE, date = updated_at (répliqué sur chaque vers lié)
+      SELECT
+        mv.verse_id AS verse_id,
+        'approve'   AS ev_type,
+        m.updated_at AS at
+      FROM meditations m
+      JOIN meditation_verses mv ON mv.meditation_id = m.id
+      WHERE m.approved = TRUE
+    )
+    SELECT
+      e.ev_type,
+      e.at,
+      v.id                AS verse_id,
+      b.name              AS book_name,
+      c.number            AS chapter_num,
+      v.number            AS verse_num
+    FROM ev e
+    JOIN verses v   ON v.id = e.verse_id
+    JOIN chapters c ON c.id = v.chapter_id
+    JOIN books b    ON b.id = c.book_id
+    WHERE e.at IS NOT NULL
+    ORDER BY e.at DESC
+    LIMIT :limit
+  `;
+
+  const rows = await sequelize.query(sql, {
+    replacements: { limit },
+    type: sequelize.QueryTypes.SELECT,
+  });
+
+  const out = rows.map(r => ({
+    id: `${r.ev_type}_${r.verse_id}_${new Date(r.at).getTime()}`,
+    type: r.ev_type, // 'create' | 'comment' | 'approve'
+    label: `${r.book_name} ${r.chapter_num}:${r.verse_num} — ${
+      r.ev_type === 'create' ? 'créé' : r.ev_type === 'comment' ? 'commenté' : 'approuvé'
+    }`,
+    atISO: new Date(r.at).toISOString(),
+  }));
+
+  return out;
 }
 
+// ------------------------------------------------------------------
+// getVerses()
+// - total        : Verse.count()
+// - meditatives  : nb de versets liés à une meditation (distinct verse_id)
+// - approved     : nb de versets liés à une meditation approuvée
+// - pending      : nb de versets liés à une meditation non approuvée OU sans commentaire
+//                  (on évalue au niveau de la meditation liée)
+// ------------------------------------------------------------------
 async function getVerses() {
-    const total = await Verse.count();
-    // versets taggés méditatifs
-    const meditatives = await MeditativeVerse.count();
-    // versets approuvés
-    const approved = await MeditativeVerse.count({ where: { approved: true } });
-    // en attente = pas approuvés OU pas de commentaire
-    const pending = await MeditativeVerse.count({
-      where: {
-        [Op.or]: [
-          { approved: false },
-          { commentary: null },
-          { commentary: "" }
-        ]
-      }
-    });
+  const total = await Verse.count();
 
-    return { total, meditatives, approved, pending };
+  const qMeditatives = `
+    SELECT COUNT(DISTINCT mv.verse_id)::int AS n
+    FROM meditation_verses mv
+  `;
+  const qApproved = `
+    SELECT COUNT(DISTINCT mv.verse_id)::int AS n
+    FROM meditation_verses mv
+    JOIN meditations m ON m.id = mv.meditation_id
+    WHERE m.approved = TRUE
+  `;
+  const qPending = `
+    SELECT COUNT(DISTINCT mv.verse_id)::int AS n
+    FROM meditation_verses mv
+    JOIN meditations m ON m.id = mv.meditation_id
+    WHERE (m.approved = FALSE OR m.approved IS NULL)
+       OR (m.commentary IS NULL OR NULLIF(TRIM(m.commentary), '') IS NULL)
+  `;
+
+  const [[{ n: meditatives }], [{ n: approved }], [{ n: pending }]] = await Promise.all([
+    sequelize.query(qMeditatives, { type: sequelize.QueryTypes.SELECT }),
+    sequelize.query(qApproved,    { type: sequelize.QueryTypes.SELECT }),
+    sequelize.query(qPending,     { type: sequelize.QueryTypes.SELECT }),
+  ]);
+
+  return { total, meditatives, approved, pending };
 }
 
+// ------------------------------------------------------------------
+// getWeeklyStats()
+// - created   : nb de liens verse<->meditation créés par jour (meditation_verses.created_at)
+// - commented : nb de versets dont la meditation a été commentée dans la fenêtre
+//               (compte les verse-links des meditations avec commentary_updated_at dans la fenêtre)
+// - approved  : nb de versets dont la meditation a été approuvée dans la fenêtre
+// ------------------------------------------------------------------
 async function getWeeklyStats() {
-    const { start, end, labels, dayIndex } = weekWindow(); // lundi 00:00 -> lundi+7 00:00
+  const { start, end, labels, dayIndex } = weekWindow();
 
-    // 1) Créés (sélectionnés comme méditatifs)
-    const qCreated = `
-      SELECT DATE_TRUNC('day', created_at) AS day, COUNT(*)::int AS count
-      FROM meditative_verses
-      WHERE created_at >= :start AND created_at < :end
-      GROUP BY day ORDER BY day
-    `;
+  const qCreated = `
+    SELECT DATE_TRUNC('day', mv.created_at) AS day, COUNT(*)::int AS count
+    FROM meditation_verses mv
+    WHERE mv.created_at >= :start AND mv.created_at < :end
+    GROUP BY day ORDER BY day
+  `;
 
-    // 2) Commentés (contenu saisi/modifié dans la fenêtre)
-    const qCommented = `
-      SELECT DATE_TRUNC('day', commentary_updated_at) AS day, COUNT(*)::int AS count
-      FROM meditative_verses
-      WHERE commentary_updated_at IS NOT NULL
-        AND commentary_updated_at >= :start AND commentary_updated_at < :end
-        AND NULLIF(TRIM(commentary), '') IS NOT NULL
-      GROUP BY day ORDER BY day
-    `;
+  const qCommented = `
+    SELECT DATE_TRUNC('day', m.commentary_updated_at) AS day, COUNT(mv.verse_id)::int AS count
+    FROM meditations m
+    JOIN meditation_verses mv ON mv.meditation_id = m.id
+    WHERE m.commentary_updated_at IS NOT NULL
+      AND m.commentary_updated_at >= :start AND m.commentary_updated_at < :end
+      AND NULLIF(TRIM(m.commentary), '') IS NOT NULL
+    GROUP BY day ORDER BY day
+  `;
 
-    // 3) Approuvés (dernière approbation dans la fenêtre)
-    // ⚠️ colonne renommée: approved (anciennement comment_approved)
-    const qApproved = `
-      SELECT DATE_TRUNC('day', updated_at) AS day, COUNT(*)::int AS count
-      FROM meditative_verses
-      WHERE approved = TRUE
-        AND updated_at >= :start AND updated_at < :end
-      GROUP BY day ORDER BY day
-    `;
+  const qApproved = `
+    SELECT DATE_TRUNC('day', m.updated_at) AS day, COUNT(mv.verse_id)::int AS count
+    FROM meditations m
+    JOIN meditation_verses mv ON mv.meditation_id = m.id
+    WHERE m.approved = TRUE
+      AND m.updated_at >= :start AND m.updated_at < :end
+    GROUP BY day ORDER BY day
+  `;
 
-    const [rC, rCm, rA] = await Promise.all([
-      sequelize.query(qCreated,   { replacements: { start, end }, type: sequelize.QueryTypes.SELECT }),
-      sequelize.query(qCommented, { replacements: { start, end }, type: sequelize.QueryTypes.SELECT }),
-      sequelize.query(qApproved,  { replacements: { start, end }, type: sequelize.QueryTypes.SELECT }),
-    ]);
+  const [rC, rCm, rA] = await Promise.all([
+    sequelize.query(qCreated,   { replacements: { start, end }, type: sequelize.QueryTypes.SELECT }),
+    sequelize.query(qCommented, { replacements: { start, end }, type: sequelize.QueryTypes.SELECT }),
+    sequelize.query(qApproved,  { replacements: { start, end }, type: sequelize.QueryTypes.SELECT }),
+  ]);
 
-    // préparer les séries (7 cases L..D)
-    const created   = Array(7).fill(0);
-    const commented = Array(7).fill(0);
-    const approved  = Array(7).fill(0);
+  const created   = Array(7).fill(0);
+  const commented = Array(7).fill(0);
+  const approved  = Array(7).fill(0);
 
-    for (const r of rC)  { const i = dayIndex(new Date(r.day)); if (i>=0 && i<7) created[i]   = r.count; }
-    for (const r of rCm) { const i = dayIndex(new Date(r.day)); if (i>=0 && i<7) commented[i] = r.count; }
-    for (const r of rA)  { const i = dayIndex(new Date(r.day)); if (i>=0 && i<7) approved[i]  = r.count; }
+  for (const r of rC)  { const i = dayIndex(new Date(r.day)); if (i>=0 && i<7) created[i]   = r.count; }
+  for (const r of rCm) { const i = dayIndex(new Date(r.day)); if (i>=0 && i<7) commented[i] = r.count; }
+  for (const r of rA)  { const i = dayIndex(new Date(r.day)); if (i>=0 && i<7) approved[i]  = r.count; }
 
-    return { labels, created, commented, approved };
+  return { labels, created, commented, approved };
 }
 
 function weekWindow(base = new Date()) {
   const dt = new Date(base);
-  const day = dt.getDay();                 // 0=dim..6=sam
+  const day = dt.getDay(); // 0=dim..6=sam
   const diffToMonday = (day + 6) % 7;
   const start = new Date(dt);
-  start.setHours(0,0,0,0);
+  start.setHours(0, 0, 0, 0);
   start.setDate(start.getDate() - diffToMonday);
   const end = new Date(start);
   end.setDate(end.getDate() + 7);
@@ -151,7 +184,6 @@ function weekWindow(base = new Date()) {
 
   return { start, end, labels, dayIndex };
 }
-
 
 module.exports = {
   getRecentActivity,

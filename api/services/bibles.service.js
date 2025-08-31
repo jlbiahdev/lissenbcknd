@@ -1,103 +1,170 @@
 // services/bibles.service.js
-const { Bible, Book, Verse, MeditativeVerse, Theme } = require('../models');
 const { Op } = require('sequelize');
+const {
+  Bible,
+  Testament,
+  Book,
+  Chapter,
+  Verse,
+  Theme,
+  Meditation,
+} = require('../models');
 
-async function getBooks(code) {
+// ---------------------- getBooks ----------------------
+async function getBooks(bibleCode) {
   const bible = await Bible.findOne({
-    where: { code },
-    include: [{ model: Book, as: 'Books' }],
-  });
-
-  if (!bible) {
-    throw new Error(`Bible with code '${code}' not found`);
-  }
-
-  return bible.Books;
-}
-
-async function getBook(code, bookId) {
-  const bible = await Bible.findOne({
-    where: { code },
+    where: { code: bibleCode },
     include: [{
-      model: Book,
-      as: 'Books',
-      where: { id: bookId },
-      required: true,
+      model: Testament, as: 'testaments',
+      include: [{ model: Book, as: 'books' }],
+      required: false,
     }],
   });
 
-  if (!bible || bible.Books.length === 0) {
-    throw new Error(`Book with id '${bookId}' not found in bible '${code}'`);
+  if (!bible) {
+    throw new Error(`Bible with code '${bibleCode}' not found`);
   }
 
-  return bible.Books[0];
+  // Payload attendu : tableau de Book (comme avant)
+  const books = (bible.testaments || []).flatMap(t => t.books || []);
+  return books;
 }
 
-async function getVerses(bible, bookNameLike, chapter, textLike, isMeditative, isApproved) {
-  const where = {};
-  if (bookNameLike) {
-    const bookWhere = {
-      name: { [Op.iLike]: `%${bookNameLike}%` }, // iLike pour insensible à la casse
-    };
-    if (bible) {
-      bookWhere.bibleCode = bible;
-    }
-    const books = await Book.findAll({
-      where: bookWhere,
-      attributes: ['id'],
-    });
-    const bookIds = books.map(b => b.id);
-    if (bookIds.length > 0) {
-      where.bookId = bookIds;
-    } else {
-      where.bookId = null; // No matching books
-    }
-  }
-  if (chapter) {
-    where.chapterNum = chapter;
-  }
-
-  if (textLike) {
-    where.text = { [Op.iLike]: `%${textLike}%` };
-  }
-
-  // base query : Verse + Book + MeditativeVerse
-  const { rows, count } = await Verse.findAndCountAll({
-    where,
-    attributes: { exclude: ['bookId'] },
-    include: [
-      { model: Book, as: 'Book', attributes: ["id", "name", "code", "bibleCode"] },
-      { 
-        model: MeditativeVerse, 
-        as: 'Meditative', 
-        attributes: ["id", "commentary", "approved"],
-        include: [{ model: Theme, as: "themes" }]
-      },
-    ],
-    order: [["id", "ASC"]],
-    distinct: true,
+// ---------------------- getBook -----------------------
+async function getBook(bibleCode, bookId) {
+  // Cherche le Book par id, en s'assurant qu'il appartient à la Bible 'bibleCode'
+  const book = await Book.findOne({
+    where: { id: bookId },
+    include: [{
+      model: Testament, as: 'testament', required: true,
+      include: [{ model: Bible, as: 'bible', where: { code: bibleCode }, required: true }],
+    }],
   });
 
-  // filtrage supplémentaire (méditatif/approved) côté JS si besoin
-  let items = rows;
-  if (isMeditative !== undefined) {
-    const meditative = Number(isMeditative) === 1;
-    items = items.filter(v => meditative ? v.Meditative != null : v.Meditative == null);
+  if (!book) {
+    throw new Error(`Book with id '${bookId}' not found in bible '${bibleCode}'`);
   }
 
+  return book;
+}
+
+// ---------------------- getVerses ---------------------
+async function getVerses(bibleCode, bookNameLike, chapter, textLike, isMeditative, isApproved) {
+  const verseWhere = {};
+  if (textLike) verseWhere.text = { [Op.iLike]: `%${textLike}%` };
+
+  // Construit les includes imbriqués pour filtrer par bible / livre / chapitre
+  const include = [
+    {
+      model: Chapter,
+      as: 'chapter',
+      attributes: ['id', 'number'],
+      required: true,
+      where: chapter ? { number: chapter } : undefined,
+      include: [{
+        model: Book,
+        as: 'book',
+        attributes: ['id', 'name', 'code'],
+        required: true,
+        where: bookNameLike ? { name: { [Op.iLike]: `%${bookNameLike}%` } } : undefined,
+        include: [{
+          model: Testament,
+          as: 'testament',
+          attributes: ['id'],
+          required: true,
+          include: [{
+            model: Bible,
+            as: 'bible',
+            attributes: ['code', 'name', 'language', 'editionYear'],
+            required: true,
+            where: bibleCode ? { code: bibleCode } : undefined,
+          }],
+        }],
+      }],
+    },
+    // Thèmes du verset (via pivot)
+    {
+      model: Theme,
+      as: 'themes',
+      attributes: ['id', 'name', 'categoryId'],
+      through: { attributes: [] },
+      required: false,
+    },
+    // Méditations liées (via pivot)
+    {
+      model: Meditation,
+      as: 'meditations',
+      attributes: ['id', 'commentary', 'approved', 'commentaryUpdatedAt'],
+      through: { attributes: [] },
+      required: false,
+    },
+  ];
+
+  const { rows } = await Verse.findAndCountAll({
+    where: verseWhere,
+    attributes: ['id', 'number', 'text', 'chapterId'],
+    include,
+    order: [['id', 'ASC']],
+    distinct: true, // évite les doublons avec belongsToMany
+  });
+
+  // Post-traitement pour restituer le payload HISTORIQUE (plat)
+  let items = rows.map(v => {
+    const j = v.toJSON();
+
+    const book = j.chapter?.book || null;
+    const bible = j.chapter?.book?.testament?.bible || null;
+
+    // Book attendu : { id, name, code, bibleCode }
+    const BookFlat = book ? {
+      id: book.id,
+      name: book.name,
+      code: book.code,
+      bibleCode: bible?.code || null,
+    } : null;
+
+    // Méditation unique (0..1) comme avant
+    const firstMed = Array.isArray(j.meditations) && j.meditations.length > 0 ? j.meditations[0] : null;
+
+    // Les thèmes étaient exposés sous "Meditative.themes" dans l’ancien payload :
+    // on les dérive depuis le verset (via verse_themes)
+    const verseThemes = Array.isArray(j.themes)
+      ? j.themes.map(t => ({ id: t.id, name: t.name, categoryId: t.categoryId }))
+      : [];
+
+    const Meditative = firstMed ? {
+      id: firstMed.id,
+      commentary: firstMed.commentary,
+      approved: firstMed.approved,
+      themes: verseThemes,
+    } : null;
+
+    // Payload final (plat), sans branches internes
+    return {
+      id: j.id,
+      number: j.number,
+      text: j.text,
+      chapterId: j.chapterId,
+      Book: BookFlat,
+      Bible: bible ? {
+        code: bible.code,
+        name: bible.name,
+        language: bible.language,
+        editionYear: bible.editionYear,
+      } : null,
+      Meditative,
+    };
+  });
+
+  // Filtres JS identiques à l’ancien service
+  if (isMeditative !== undefined) {
+    const meditative = Number(isMeditative) === 1;
+    items = items.filter(v => (meditative ? v.Meditative != null : v.Meditative == null));
+  }
   if (isApproved !== undefined) {
     const approved = Number(isApproved) === 1;
     items = items.filter(v => v.Meditative?.approved === approved);
   }
-
-  // Ajoute les bibles à chaque item
-  const bibleCodes = [...new Set(items.map(v => v.Book?.bibleCode).filter(Boolean))];
-  const bibles = await Bible.findAll({ where: { code: bibleCodes } });
-
-  items = items.map(v => {
-    const bible = bibles.find(b => b.code === v.Book?.bibleCode);
-    return { ...v.toJSON(), Bible: bible ? bible.toJSON() : null };
-  });
 
   return items;
 }
