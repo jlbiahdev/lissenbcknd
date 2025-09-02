@@ -30,7 +30,6 @@ export default function Dashboard(){
   const [error, setError] = useState("");
 
   useEffect(() => {
-    console.log("Fetching dashboard data...");
     let alive = true;
     (async () => {
       setLoading(true); setError("");
@@ -39,7 +38,6 @@ export default function Dashboard(){
           fetchStats(), fetchActivity(), fetchWeekly()
         ]);
         if (!alive) return;
-        console.log("Dashboard data fetched:", { stats: s, activity: a, weekly: w });
         setStats(s);
         setActivity(a);
         setWeekly(w);
@@ -168,7 +166,6 @@ function MiniChart({ data, height = 120 }) {
   const approved  = (data.approved  || []).map(Number);
   const labels    = (data.labels && data.labels.length ? data.labels : ["L","M","M","J","V","S","D"]);
 
-  console.log("MiniChart data:", data);
   const maxY = Math.max(1, ...created, ...commented, ...approved);
   const series = [
     { key: "created",   values: created,   stroke: "var(--accent)"   },
@@ -226,7 +223,6 @@ async function fetchStats(){
   const res = await fetch(url);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const data = await res.json();
-  console.log("Real data fetched:", data);
   return data;
 
 }

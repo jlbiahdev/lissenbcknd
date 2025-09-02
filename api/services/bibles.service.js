@@ -140,11 +140,12 @@ async function getVerses(bibleCode, bookNameLike, chapter, textLike, isMeditativ
     } : null;
 
     // Payload final (plat), sans branches internes
+    // console.log('j', j)
     return {
       id: j.id,
       number: j.number,
       text: j.text,
-      chapterId: j.chapterId,
+      chapterNumber: j.chapter.number,
       Book: BookFlat,
       Bible: bible ? {
         code: bible.code,
@@ -166,6 +167,7 @@ async function getVerses(bibleCode, bookNameLike, chapter, textLike, isMeditativ
     items = items.filter(v => v.Meditative?.approved === approved);
   }
 
+  console.log('items', items)
   return items;
 }
 

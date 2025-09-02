@@ -29,33 +29,28 @@ export default function VerseListPage() {
   const [themes, setThemes] = useState([]);
 
   // --------------------- Derived ---------------------
-  // const totalPages = Math.max(1, Math.ceil(total / pageSize));
-
-  // Bibles / Livres — robustes backend *et* mock
   const availableBibles = useMemo(() => {
-    const codes = rows.map(r => r.Bible.code).filter(Boolean);
+    const codes = rows.map(r => r?.Bible?.code).filter(Boolean);
     return Array.from(new Set(codes));
   }, [rows]);
 
   const availableBooks = useMemo(() => {
-    const books = Array.from(
-      new Map(
+    const map = new Map(
       rows
-        .map(r => r.Book && { id: r.Book.id, name: r.Book.name })
+        .map(r => r?.Book && { id: r.Book.id, name: r.Book.name })
         .filter(Boolean)
         .map(b => [b.name, b])
-      ).values()
     );
-    return Array.from(new Set(books)).sort((a, b) => a.id - b.id);
+    return Array.from(map.values()).sort((a, b) => a.id - b.id);
   }, [rows]);
 
   const pageRows = useMemo(() => {
-  const start = (page - 1) * pageSize;
-  const end = start + pageSize;
-  return rows.slice(start, end);
-}, [rows, page, pageSize]);
+    const start = (page - 1) * pageSize;
+    const end = start + pageSize;
+    return rows.slice(start, end);
+  }, [rows, page, pageSize]);
 
-const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   // --------------------- Effects ---------------------
   useEffect(() => {
@@ -82,7 +77,7 @@ const totalPages = Math.max(1, Math.ceil(total / pageSize));
     }
     load();
     return () => { isActive = false; };
-  }, [filters, sort.by, sort.dir]);
+  }, [filters, sort.by, sort.dir, page, pageSize]);
 
   // Sync modal form
   useEffect(() => {
@@ -130,10 +125,8 @@ const totalPages = Math.max(1, Math.ceil(total / pageSize));
     ));
     try {
       if (newVal) {
-        console.log("Adding meditation for verse:", verse.id);
         await apiPost(`${API_BASE}/meditations/${verse.id}/add`, { });
       } else {
-        console.log("Removing meditation for verse:", verse.id);
         await apiPost(`${API_BASE}/meditations/${verse.id}/remove`, { });
       }
     } catch (e) {
@@ -192,7 +185,6 @@ const totalPages = Math.max(1, Math.ceil(total / pageSize));
     ));
 
     try {
-      console.log("Approving verse:", verse.id);
       await apiPost(`${API_BASE}/meditations/${verse.id}/approve`, {});
       setEditing(null);
     } catch (e) {
@@ -210,13 +202,15 @@ const totalPages = Math.max(1, Math.ceil(total / pageSize));
     const exportable = rows.map((r) => {
       const isMedit = !!(r.is_meditative ?? r.Meditative);
       const appr = !!(r.approved ?? r.Meditative?.approved);
-      const bookName = r.Book?.name || r.book;
-      const bible = r.Book?.code || r.bible;
-      const chapter = r.chapterNum ?? r.chapter;
-      const verse = r.verseNum ?? r.verse;
+      const bookName = r?.Book?.name ?? r?.book ?? "";
+      const bible = r?.Book?.code ?? r?.bible ?? "";
+      // Compat multiples formes
+      const chapter = r?.chapterNum ?? r?.chapter ?? r?.chapterNumber ?? null;
+      const verse = r?.verseNum ?? r?.number ?? r?.verse ?? null;
       return {
         id: r.id, bible, book: bookName, chapter, verse, text: r.text,
-        is_meditative: isMedit, commentary: r.commentary ?? r.Meditative?.commentary ?? "",
+        is_meditative: isMedit,
+        commentary: r.commentary ?? r.Meditative?.commentary ?? "",
         approved: appr,
       };
     });
@@ -268,7 +262,7 @@ const totalPages = Math.max(1, Math.ceil(total / pageSize));
             placeholder="Ex: Psaumes"
           />
           <datalist id="book-list">
-            {availableBooks.map((b, i) => (
+            {availableBooks.map((b) => (
               <option key={b.id} value={b.name} />
             ))}
           </datalist>
@@ -393,8 +387,11 @@ const totalPages = Math.max(1, Math.ceil(total / pageSize));
               <button className="btn ghost" onClick={() => setEditing(null)}>Annuler</button>
               <button className="btn pri" onClick={save}>Enregistrer</button>
               <button 
-              className={`btn ${editing.Meditative?.approved ? "danger" : "success"}`}
-              onClick={() => toggleApproveVerse(editing)} >{editing.Meditative?.approved ? "Unapprove" : "Approve"}</button>
+                className={`btn ${editing.Meditative?.approved ? "danger" : "success"}`}
+                onClick={() => toggleApproveVerse(editing)}
+              >
+                {editing.Meditative?.approved ? "Unapprove" : "Approve"}
+              </button>
             </div>
           </div>
         </Modal>
@@ -420,18 +417,22 @@ function Th({ label, sortKey, sort, onSort }) {
 }
 
 function RefCell({ v, short = false }) {
-  const bookName = v.Book.name;
-  const bookCode = v.Book.code;
-  const code = v.Bible.code;
-  const ch = v.chapterNum;
-  const ve = v.verseNum;
-  const ref = `${code} ${bookName} ${ch}:${ve}`.trim();
+  const bookName = v?.Book?.name ?? v?.book ?? "";
+  const bookCode = v?.Book?.code ?? v?.bookCode ?? "";
+  const bibleCode = v?.Bible?.code ?? v?.bible ?? "";
+
+  // Compat : anciens champs si présents, sinon nouveaux
+  const ch = v?.chapterNum ?? v?.chapter ?? v?.chapterNumber ?? null;
+  const ve = v?.verseNum ?? v?.number ?? v?.verse ?? null;
+
+  const cv = ch != null && ve != null ? `${ch}:${ve}` : (ve != null ? `?:${ve}` : "—");
+  const title = `${bibleCode || ""} ${bookName || ""} ${cv}`.trim();
 
   return (
-    <span className="refcell" title={ref}>
+    <span className="refcell" title={title}>
       <span className="book">{bookCode}</span>{" "}
-      <span className="cv">{ch}:{ve}</span>
-      {!short && code ? <span className="bible"> · {code}</span> : null}
+      <span className="cv">{cv}</span>
+      {!short && bibleCode ? <span className="bible"> · {bibleCode}</span> : null}
     </span>
   );
 }
@@ -514,7 +515,6 @@ function ThemeMulti({ value = [], onChange, options = [] }) {
 async function fetchVerses({ filters, sort }) {
   const qs = new URLSearchParams();
 
-  console.log("Fetching verses with filters:", filters);
   if (filters.bible) qs.set("bible", filters.bible);
   if (filters.book) qs.set("book", filters.book);
   if (filters.chapter) qs.set("chapter", filters.chapter);
@@ -522,19 +522,15 @@ async function fetchVerses({ filters, sort }) {
   if (filters.meditative !== "all") qs.set("isMeditative", filters.meditative === "yes" ? "1" : "0");
   if (filters.approved !== "all") qs.set("isApproved", filters.approved === "yes" ? "1" : "0");
 
-  // Tri
+  // Tri (non utilisé côté backend, conservé si tu l’actives plus tard)
   qs.set("sort", `${sort.by}:${sort.dir}`);
 
   const res = await fetch(`${API_BASE}/bibles/verses?${qs.toString()}`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const data = await res.json();
 
-  console.log("Fetched verses:", data);
-
-  // return paginateData(data, page, pageSize);
   return data;
 }
-
 
 async function apiPost(url, body) {
   const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
