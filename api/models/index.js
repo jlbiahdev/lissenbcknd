@@ -6,8 +6,8 @@ const Book = require("./book.model");
 const Chapter = require("./chapters.model");
 const Verse = require("./verse.model");
 
-const Meditation = require("./meditation.model");
-const MeditationVerse = require("./meditationVerse.model");
+const Commentary = require("./commentary.model");
+const CommentaryVerse = require("./commentaryVerse.model");
 
 const CategoryTheme = require("./categoryTheme.model");
 const Theme = require("./theme.model");
@@ -87,24 +87,24 @@ Theme.belongsTo(CategoryTheme, {
   as: "category",
 });
 
-// -------------------- Meditation ↔ Verse (pivot MeditationVerse) --------------------
-Meditation.belongsToMany(Verse, {
-  through: MeditationVerse,
-  foreignKey: "meditation_id",
+// -------------------- Commentary ↔ Verse (pivot CommentaryVerse) --------------------
+Commentary.belongsToMany(Verse, {
+  through: CommentaryVerse,
+  foreignKey: "commentary_id",
   otherKey: "verse_id",
   as: "verses",
 });
-Verse.belongsToMany(Meditation, {
-  through: MeditationVerse,
+Verse.belongsToMany(Commentary, {
+  through: CommentaryVerse,
   foreignKey: "verse_id",
-  otherKey: "meditation_id",
-  as: "meditations",
+  otherKey: "commentary_id",
+  as: "commentaries",
 });
 
 // (facultatif) Liens directs sur le pivot pour naviguer/charger vite
-Meditation.hasMany(MeditationVerse, { foreignKey: "meditation_id", as: "links" });
-MeditationVerse.belongsTo(Meditation, { foreignKey: "meditation_id", as: "meditation" });
-MeditationVerse.belongsTo(Verse, { foreignKey: "verse_id", as: "verse" });
+Commentary.hasMany(CommentaryVerse, { foreignKey: "commentary_id", as: "links" });
+CommentaryVerse.belongsTo(Commentary, { foreignKey: "commentary_id", as: "commentary" });
+CommentaryVerse.belongsTo(Verse, { foreignKey: "verse_id", as: "verse" });
 
 module.exports = {
   sequelize,
@@ -113,8 +113,8 @@ module.exports = {
   Book,
   Chapter,
   Verse,
-  Meditation,
-  MeditationVerse,
+  Commentary,
+  CommentaryVerse,
   CategoryTheme,
   Theme,
   VerseTheme,

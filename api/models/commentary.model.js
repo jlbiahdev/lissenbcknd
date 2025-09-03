@@ -1,13 +1,17 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../config/db");
 
-const Meditation = sequelize.define("Meditation", {
+const Commentary = sequelize.define("Commentary", {
   id: { 
     type: DataTypes.BIGINT, 
     primaryKey: true, 
     autoIncrement: true 
   },
-  commentary: { 
+  title: { 
+    type: DataTypes.TEXT, 
+    allowNull: false 
+  },
+  text: { 
     type: DataTypes.TEXT, 
     allowNull: true 
   },
@@ -16,17 +20,17 @@ const Meditation = sequelize.define("Meditation", {
     allowNull: false, 
     defaultValue: false, 
   },
+  
   // horodatages
   createdAt: { type: DataTypes.DATE, allowNull: false, field: "created_at", defaultValue: DataTypes.NOW },
   updatedAt: { type: DataTypes.DATE, allowNull: false, field: "updated_at", defaultValue: DataTypes.NOW },
-  commentaryUpdatedAt: { type: DataTypes.DATE, allowNull: true, field: "commentary_updated_at", },
 },
 {
-  tableName: "meditations",
+  tableName: "commentaries",
   freezeTableName: true,
   timestamps: true,
   underscored: true,
   returning: false,
 });
 
-module.exports = Meditation;
+module.exports = Commentary;

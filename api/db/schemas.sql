@@ -1,8 +1,8 @@
 DROP TABLE IF EXISTS public.verse_themes;
 DROP TABLE IF EXISTS public.themes;
 DROP TABLE IF EXISTS public.category_themes;
-DROP TABLE IF EXISTS public.meditation_verses;
-DROP TABLE IF EXISTS public.meditations;
+DROP TABLE IF EXISTS public.commentary_verses;
+DROP TABLE IF EXISTS public.commentaries;
 
 DROP TABLE IF EXISTS public.verses;
 DROP TABLE IF EXISTS public.chapters;
@@ -110,9 +110,10 @@ CREATE TABLE themes (
 );
 
 -- Table des versets méditatifs
-CREATE TABLE meditations (
-  id                 BIGSERIAL PRIMARY KEY,
-  commentary         TEXT,
+CREATE TABLE commentaries (
+  id           BIGSERIAL PRIMARY KEY,
+  title        TEXT NOT NULL,
+  text         TEXT,
   approved   BOOLEAN NOT NULL DEFAULT FALSE,   -- commentaire approuvé
 
   -- horodatages
@@ -121,19 +122,19 @@ CREATE TABLE meditations (
   commentary_updated_at TIMESTAMPTZ
 );
 
-CREATE TABLE meditation_verses (
-  meditation_id BIGINT  NOT NULL REFERENCES meditations(id) ON DELETE CASCADE,
+CREATE TABLE commentary_verses (
+  commentary_id BIGINT  NOT NULL REFERENCES commentaries(id) ON DELETE CASCADE,
   verse_id      INTEGER NOT NULL REFERENCES verses(id)      ON DELETE CASCADE,
 
   -- horodatages
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
-  PRIMARY KEY (meditation_id, verse_id),
-  CONSTRAINT uq_meditation_verse UNIQUE (meditation_id, verse_id)
+  PRIMARY KEY (commentary_id, verse_id),
+  CONSTRAINT uq_commentary_verse UNIQUE (commentary_id, verse_id)
 );
 
-CREATE INDEX idx_meditation_verses_meditation ON meditation_verses (meditation_id);
-CREATE INDEX idx_meditation_verses_verse      ON meditation_verses (verse_id);
+CREATE INDEX idx_commentary_verses_commentary ON commentary_verses (commentary_id);
+CREATE INDEX idx_commentary_verses_verse      ON commentary_verses (verse_id);
 CREATE TABLE verse_themes (
   verse_id BIGINT REFERENCES verses(id) ON DELETE CASCADE,
   theme_id INT REFERENCES themes(id) ON DELETE CASCADE,
@@ -145,9 +146,9 @@ CREATE TABLE verse_themes (
 );
 
 -- Index pour /stats/weekly
-CREATE INDEX IF NOT EXISTS idx_med_created_at   ON meditations (created_at);
-CREATE INDEX IF NOT EXISTS idx_med_comm_upd_at  ON meditations (commentary_updated_at) WHERE commentary_updated_at IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_med_approved     ON meditations (updated_at) WHERE approved = TRUE;
+CREATE INDEX IF NOT EXISTS idx_med_created_at   ON commentaries (created_at);
+CREATE INDEX IF NOT EXISTS idx_med_comm_upd_at  ON commentaries (commentary_updated_at) WHERE commentary_updated_at IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_med_approved     ON commentaries (updated_at) WHERE approved = TRUE;
 
 -- Trigger: maintained updated_at
 CREATE OR REPLACE FUNCTION trg_touch_updated_at() RETURNS trigger AS $$
@@ -156,20 +157,20 @@ BEGIN
   RETURN NEW;
 END $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER medv_touch_updated_at
-BEFORE UPDATE ON meditation_verses
+CREATE TRIGGER comment_touch_updated_at
+BEFORE UPDATE ON commentary_verses
 FOR EACH ROW EXECUTE FUNCTION trg_touch_updated_at();
 
 -- Trigger: si le commentaire change → on marque la date ET on désapprouve automatiquement
 CREATE OR REPLACE FUNCTION trg_comment_changed() RETURNS trigger AS $$
 BEGIN
-  IF NEW.commentary IS DISTINCT FROM OLD.commentary THEN
+  IF NEW.text IS DISTINCT FROM OLD.text THEN
     NEW.commentary_updated_at := now();
     NEW.approved := FALSE;
   END IF;
   RETURN NEW;
 END $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER medv_comment_changed
-BEFORE UPDATE ON meditation_verses
+CREATE TRIGGER comment_changed
+BEFORE UPDATE ON commentary_verses
 FOR EACH ROW EXECUTE FUNCTION trg_comment_changed();
