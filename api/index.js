@@ -7,6 +7,7 @@ const swaggerDocument = require('./swagger/swagger.json');
 const themesRoutes = require('./routes/themes.routes');
 const biblesRoutes = require('./routes/bibles.routes');
 const booksRoutes = require('./routes/books.routes');
+const commentariesRoutes = require('./routes/commentaries.routes');
 const meditationsRoutes = require('./routes/meditations.routes');
 const statsRoutes = require('./routes/stats.routes');
 
@@ -16,6 +17,7 @@ app.use(express.json());
 app.use('/api/themes', themesRoutes);
 app.use('/api/bibles', biblesRoutes);
 app.use('/api/books', booksRoutes);
+app.use('/api/commentaries', commentariesRoutes);
 app.use('/api/meditations', meditationsRoutes);
 app.use('/api/stats', statsRoutes);
 

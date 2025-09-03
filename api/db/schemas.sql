@@ -109,7 +109,7 @@ CREATE TABLE themes (
   UNIQUE(name)
 );
 
--- Table des versets méditatifs
+-- Table des commentaires bibliques
 CREATE TABLE commentaries (
   id           BIGSERIAL PRIMARY KEY,
   title        TEXT NOT NULL,
@@ -119,7 +119,6 @@ CREATE TABLE commentaries (
   -- horodatages
   created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
-  commentary_updated_at TIMESTAMPTZ
 );
 
 CREATE TABLE commentary_verses (
@@ -147,7 +146,6 @@ CREATE TABLE verse_themes (
 
 -- Index pour /stats/weekly
 CREATE INDEX IF NOT EXISTS idx_med_created_at   ON commentaries (created_at);
-CREATE INDEX IF NOT EXISTS idx_med_comm_upd_at  ON commentaries (commentary_updated_at) WHERE commentary_updated_at IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_med_approved     ON commentaries (updated_at) WHERE approved = TRUE;
 
 -- Trigger: maintained updated_at
@@ -165,7 +163,7 @@ FOR EACH ROW EXECUTE FUNCTION trg_touch_updated_at();
 CREATE OR REPLACE FUNCTION trg_comment_changed() RETURNS trigger AS $$
 BEGIN
   IF NEW.text IS DISTINCT FROM OLD.text THEN
-    NEW.commentary_updated_at := now();
+    NEW.updated_at := now();
     NEW.approved := FALSE;
   END IF;
   RETURN NEW;

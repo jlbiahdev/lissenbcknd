@@ -179,7 +179,7 @@ async function update(verseId, commentary, themes) {
       await linkVerseToMeditation(verseId, med.id, t);
     }
 
-    med.commentary = commentary ?? null;
+    med.text = commentary ?? null;
     med.approved = false;
     med.commentaryUpdatedAt = new Date();
     await med.save({ transaction: t });

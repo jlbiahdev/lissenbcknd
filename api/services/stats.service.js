@@ -6,10 +6,10 @@ const sequelize = require("../config/db");
 // ------------------------------------------------------------------
 // getRecentActivity()
 // - Avant : événements tirés de meditative_verses
-// - Maintenant : on base les événements sur meditations + meditation_verses
-//   * create  : mv.created_at (meditation_verses)
-//   * comment : m.commentary_updated_at (meditations) si commentary non vide
-//   * approve : m.updated_at (meditations) si approved = true
+// - Maintenant : on base les événements sur commentaries + commentary_verses
+//   * create  : mv.created_at (commentary_verses)
+//   * comment : m.updated_at (commentaries) si commentary non vide
+//   * approve : m.updated_at (commentaries) si approved = true
 //   On émet un événement PAR VERSE lié (comme avant).
 // ------------------------------------------------------------------
 async function getRecentActivity() {
@@ -20,7 +20,7 @@ async function getRecentActivity() {
         mv.verse_id AS verse_id,
         'create'    AS ev_type,
         mv.created_at AS at
-      FROM meditation_verses mv
+      FROM commentary_verses mv
 
       UNION ALL
 
@@ -28,11 +28,11 @@ async function getRecentActivity() {
       SELECT
         mv.verse_id AS verse_id,
         'comment'   AS ev_type,
-        m.commentary_updated_at AS at
-      FROM meditations m
-      JOIN meditation_verses mv ON mv.meditation_id = m.id
-      WHERE m.commentary_updated_at IS NOT NULL
-        AND NULLIF(TRIM(m.commentary), '') IS NOT NULL
+        m.updated_at AS at
+      FROM commentaries m
+      JOIN commentary_verses mv ON mv.commentary_id = m.id
+      WHERE m.updated_at IS NOT NULL
+        AND NULLIF(TRIM(m.text), '') IS NOT NULL
 
       UNION ALL
 
@@ -41,8 +41,8 @@ async function getRecentActivity() {
         mv.verse_id AS verse_id,
         'approve'   AS ev_type,
         m.updated_at AS at
-      FROM meditations m
-      JOIN meditation_verses mv ON mv.meditation_id = m.id
+      FROM commentaries m
+      JOIN commentary_verses mv ON mv.commentary_id = m.id
       WHERE m.approved = TRUE
     )
     SELECT
@@ -89,20 +89,20 @@ async function getVerses() {
 
   const qMeditatives = `
     SELECT COUNT(DISTINCT mv.verse_id)::int AS n
-    FROM meditation_verses mv
+    FROM commentary_verses mv
   `;
   const qApproved = `
     SELECT COUNT(DISTINCT mv.verse_id)::int AS n
-    FROM meditation_verses mv
-    JOIN meditations m ON m.id = mv.meditation_id
+    FROM commentary_verses mv
+    JOIN commentaries m ON m.id = mv.commentary_id
     WHERE m.approved = TRUE
   `;
   const qPending = `
     SELECT COUNT(DISTINCT mv.verse_id)::int AS n
-    FROM meditation_verses mv
-    JOIN meditations m ON m.id = mv.meditation_id
+    FROM commentary_verses mv
+    JOIN commentaries m ON m.id = mv.commentary_id
     WHERE (m.approved = FALSE OR m.approved IS NULL)
-       OR (m.commentary IS NULL OR NULLIF(TRIM(m.commentary), '') IS NULL)
+       OR (m.text IS NULL OR NULLIF(TRIM(m.text), '') IS NULL)
   `;
 
   const [[{ n: meditatives }], [{ n: approved }], [{ n: pending }]] = await Promise.all([
@@ -118,7 +118,7 @@ async function getVerses() {
 // getWeeklyStats()
 // - created   : nb de liens verse<->meditation créés par jour (meditation_verses.created_at)
 // - commented : nb de versets dont la meditation a été commentée dans la fenêtre
-//               (compte les verse-links des meditations avec commentary_updated_at dans la fenêtre)
+//               (compte les verse-links des meditations avec updated_at dans la fenêtre)
 // - approved  : nb de versets dont la meditation a été approuvée dans la fenêtre
 // ------------------------------------------------------------------
 async function getWeeklyStats() {
@@ -126,25 +126,25 @@ async function getWeeklyStats() {
 
   const qCreated = `
     SELECT DATE_TRUNC('day', mv.created_at) AS day, COUNT(*)::int AS count
-    FROM meditation_verses mv
+    FROM commentary_verses mv
     WHERE mv.created_at >= :start AND mv.created_at < :end
     GROUP BY day ORDER BY day
   `;
 
   const qCommented = `
-    SELECT DATE_TRUNC('day', m.commentary_updated_at) AS day, COUNT(mv.verse_id)::int AS count
-    FROM meditations m
-    JOIN meditation_verses mv ON mv.meditation_id = m.id
-    WHERE m.commentary_updated_at IS NOT NULL
-      AND m.commentary_updated_at >= :start AND m.commentary_updated_at < :end
-      AND NULLIF(TRIM(m.commentary), '') IS NOT NULL
+    SELECT DATE_TRUNC('day', m.updated_at) AS day, COUNT(mv.verse_id)::int AS count
+    FROM commentaries m
+    JOIN commentary_verses mv ON mv.commentary_id = m.id
+    WHERE m.updated_at IS NOT NULL
+      AND m.updated_at >= :start AND m.updated_at < :end
+      AND NULLIF(TRIM(m.text), '') IS NOT NULL
     GROUP BY day ORDER BY day
   `;
 
   const qApproved = `
     SELECT DATE_TRUNC('day', m.updated_at) AS day, COUNT(mv.verse_id)::int AS count
-    FROM meditations m
-    JOIN meditation_verses mv ON mv.meditation_id = m.id
+    FROM commentaries m
+    JOIN commentary_verses mv ON mv.commentary_id = m.id
     WHERE m.approved = TRUE
       AND m.updated_at >= :start AND m.updated_at < :end
     GROUP BY day ORDER BY day

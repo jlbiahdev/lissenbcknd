@@ -90,14 +90,6 @@ async function getVerses(bibleCode, bookNameLike, chapter, textLike, isMeditativ
       through: { attributes: [] },
       required: false,
     },
-    // Méditations liées (via pivot)
-    {
-      model: Meditation,
-      as: 'meditations',
-      attributes: ['id', 'commentary', 'approved', 'commentaryUpdatedAt'],
-      through: { attributes: [] },
-      required: false,
-    },
   ];
 
   const { rows } = await Verse.findAndCountAll({
@@ -124,7 +116,7 @@ async function getVerses(bibleCode, bookNameLike, chapter, textLike, isMeditativ
     } : null;
 
     // Méditation unique (0..1) comme avant
-    const firstMed = Array.isArray(j.meditations) && j.meditations.length > 0 ? j.meditations[0] : null;
+    // const firstMed = Array.isArray(j.meditations) && j.meditations.length > 0 ? j.meditations[0] : null;
 
     // Les thèmes étaient exposés sous "Meditative.themes" dans l’ancien payload :
     // on les dérive depuis le verset (via verse_themes)
@@ -132,12 +124,12 @@ async function getVerses(bibleCode, bookNameLike, chapter, textLike, isMeditativ
       ? j.themes.map(t => ({ id: t.id, name: t.name, categoryId: t.categoryId }))
       : [];
 
-    const Meditative = firstMed ? {
-      id: firstMed.id,
-      commentary: firstMed.commentary,
-      approved: firstMed.approved,
-      themes: verseThemes,
-    } : null;
+    // const Meditative = firstMed ? {
+    //   id: firstMed.id,
+    //   commentary: firstMed.text,
+    //   approved: firstMed.approved,
+    //   themes: verseThemes,
+    // } : null;
 
     // Payload final (plat), sans branches internes
     // console.log('j', j)
@@ -153,7 +145,7 @@ async function getVerses(bibleCode, bookNameLike, chapter, textLike, isMeditativ
         language: bible.language,
         editionYear: bible.editionYear,
       } : null,
-      Meditative,
+      // Meditative,
     };
   });
 

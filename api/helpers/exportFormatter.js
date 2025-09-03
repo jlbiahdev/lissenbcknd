@@ -13,23 +13,25 @@ function formatToExport(meditations) {
   });
 }
 
-function formatToView(meditation) {
-  const verse = meditation.verse || {};
+function formatToView(data) {
   return {
-    themes: meditation.themes || [],
+    themes: data.themes || [],
     commentary: {
-      text: meditation.commentary || "",
-      approved: meditation.commentApproved || false
+      id: data.id,
+      title: data.title || "",
+      text: data.text || "",
+      approved: data.approved || false,
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt ?? null,
     },
-    verse: {
-      id: verse.id,
-      bookId: verse.bookId,
-      chapterNum: verse.chapterNum,
-      verseNum: verse.verseNum,
-      text: verse.text,
-      refs: verse.refs || [],
-      approved: meditation.verseApproved || false
-    }
+    verses: data.verses ? data.verses.map(v => ({
+      id: v.id,
+      bookId: v.chapter.book.id,
+      chapterNum: v.chapter.number,
+      verseNum: v.number,
+      text: v.text,
+      refs: v.refs || [],
+    })) : []
   };
 }
 

@@ -67,6 +67,7 @@ export default function Dashboard(){
         <h1 className="title">Tableau de bord</h1>
         <nav className="quick-nav">
           <Link className="btn pri" to="/verses">Gérer les versets</Link>
+          <Link className="btn pri" to="/commentaries">Gérer les commentaires</Link>
           <Link className="btn ghost" to="/settings">Paramètres</Link>
         </nav>
       </header>

@@ -5,6 +5,7 @@ import "./styles/index.css";
 import Dashboard from "./pages/Dashboard.jsx";
 import VerseListPage from "./pages/VerseListPage.jsx";
 import ThemeListPage from "./pages/ThemeListPage";
+import CommentaryListPage from "./pages/CommentaryListPage";
 
 export default function App() {
   return (
@@ -27,6 +28,7 @@ export default function App() {
           <Route path="/verses" element={<VerseListPage />} />
           <Route path="/themes" element={<ThemeListPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="/commentaries" element={<CommentaryListPage />} />
         </Routes>
       </main>
     </BrowserRouter>
