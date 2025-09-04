@@ -24,14 +24,27 @@ function formatToView(data) {
       createdAt: data.createdAt,
       updatedAt: data.updatedAt ?? null,
     },
-    verses: data.verses ? data.verses.map(v => ({
-      id: v.id,
-      bookId: v.chapter.book.id,
-      chapterNum: v.chapter.number,
-      verseNum: v.number,
-      text: v.text,
-      refs: v.refs || [],
-    })) : []
+    verses: data.verses
+      ? data.verses
+          .slice()
+          .sort((a, b) => {
+            if (a.chapter.book.id !== b.chapter.book.id) {
+              return a.chapter.book.id - b.chapter.book.id;
+            }
+            if (a.chapter.number !== b.chapter.number) {
+              return a.chapter.number - b.chapter.number;
+            }
+            return a.number - b.number;
+          })
+          .map(v => ({
+            id: v.id,
+            bookId: v.chapter.book.id,
+            chapterNum: v.chapter.number,
+            verseNum: v.number,
+            text: v.text,
+            refs: v.refs || [],
+          }))
+      : []
   };
 }
 

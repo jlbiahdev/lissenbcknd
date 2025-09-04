@@ -15,7 +15,7 @@ function toStr(v) {
 
 // POST /commentaries
 // Body: { bookCode?: string, verse_ids: number[] }
-async function createCommentary(req, res) {
+async function add(req, res) {
   try {
     const bookCode = toStr(req.body?.bookCode);
     const verse_ids = Array.isArray(req.body?.verse_ids) ? req.body.verse_ids.map(toInt).filter(Boolean) : null;
@@ -24,16 +24,34 @@ async function createCommentary(req, res) {
       return res.status(400).json({ error: "verse_ids must be a non-empty array of integers" });
     }
 
-    const commentary = await service.insert(bookCode, verse_ids);
+    const commentary = await service.add(bookCode, verse_ids);
     return res.status(201).json(commentary);
   } catch (err) {
-    console.error("createCommentary error:", err);
+    console.error("add error:", err);
+    res.status(400).json({ error: err.message });
+  }
+}
+
+// PUT /commentaries/:id
+async function update(req, res) {
+  try {
+    const id = toInt(req.params.id);
+    if (!id) return res.status(400).json({ error: "Invalid id" });
+
+    const payload = {};
+    if (typeof req.body?.text === 'string') payload.text = req.body.text;
+    if (Array.isArray(req.body?.verseIds))  payload.verseIds = req.body.verseIds;
+
+    const out = await service.update(id, payload);
+    res.json(out);
+  } catch (err) {
+    console.error("update error:", err);
     res.status(400).json({ error: err.message });
   }
 }
 
 // DELETE /commentaries/:id
-async function deleteCommentary(req, res) {
+async function remove(req, res) {
   try {
     const id = toInt(req.params.id);
     if (!id) return res.status(400).json({ error: "Invalid id" });
@@ -41,68 +59,7 @@ async function deleteCommentary(req, res) {
     const result = await service.remove(id);
     res.json(result);
   } catch (err) {
-    console.error("deleteCommentary error:", err);
-    res.status(400).json({ error: err.message });
-  }
-}
-
-// POST /commentaries/:id/toggle
-async function toggleApproval(req, res) {
-  try {
-    const id = toInt(req.params.id);
-    if (!id) return res.status(400).json({ error: "Invalid id" });
-
-    const updated = await service.toggleApproval(id);
-    res.json(updated);
-  } catch (err) {
-    console.error("toggleApproval error:", err);
-    res.status(400).json({ error: err.message });
-  }
-}
-
-// PUT /commentaries/:id
-// Body: { text: string|null }
-async function updateCommentary(req, res) {
-  try {
-    const id = toInt(req.params.id);
-    if (!id) return res.status(400).json({ error: "Invalid id" });
-
-    const text = req.body?.text ?? null;
-    const updated = await service.update(id, text);
-    res.json(updated);
-  } catch (err) {
-    console.error("updateCommentary error:", err);
-    res.status(400).json({ error: err.message });
-  }
-}
-
-// POST /commentaries/:id/verses
-// Body: { verseId: number }
-async function addVerse(req, res) {
-  try {
-    const id = toInt(req.params.id);
-    const verseId = toInt(req.body?.verseId);
-    if (!id || !verseId) return res.status(400).json({ error: "Invalid id or verseId" });
-
-    const updated = await service.addVerse(id, verseId);
-    res.json(updated);
-  } catch (err) {
-    console.error("addVerse error:", err);
-    res.status(400).json({ error: err.message });
-  }
-}
-
-// DELETE /commentaries/:id/verses/:verseId
-async function removeVerse(req, res) {
-  try {
-    const id = toInt(req.params.id);
-    const verseId = toInt(req.params.verseId);
-    if (!id || !verseId) return res.status(400).json({ error: "Invalid id or verseId" });
-
-    const result = await service.removeVerse(id, verseId);
-    res.json(result);
-  } catch (err) {
-    console.error("removeVerse error:", err);
+    console.error("remove error:", err);
     res.status(400).json({ error: err.message });
   }
 }
@@ -123,21 +80,13 @@ async function exportOne(req, res) {
 
 // GET /commentaries
 // Optional query: ?bookName=...&chapterNum=...&verseNum=...
-async function listCommentaries(req, res) {
+async function get(req, res) {
   try {
-    const bookName = toStr(req.query.bookName);
-    const chapterNum = toInt(req.query.chapterNum);
-    const verseNum = toInt(req.query.verseNum);
-
-    if (bookName || Number.isFinite(chapterNum) || Number.isFinite(verseNum)) {
-      const rows = await service.filter(bookName, chapterNum, verseNum);
-      return res.json(rows);
-    }
-
-    const rows = await service.get();
-    res.json(rows);
+    const { bookName, bookCode, chapterNum, verseNum, approved } = req.query;
+    const data = await service.get({ bookName, bookCode, chapterNum, verseNum, approved });
+    res.json(Array.isArray(data) ? data : []);
   } catch (err) {
-    console.error("listCommentaries error:", err);
+    console.error('commentaries.get error:', err);
     res.status(500).json({ error: err.message });
   }
 }
@@ -156,14 +105,27 @@ async function getById(req, res) {
   }
 }
 
+// POST /commentaries/:id/toggle
+async function toggleApproval(req, res) {
+  try {
+    const id = toInt(req.params.id);
+    if (!id) return res.status(400).json({ error: "Invalid id" });
+
+    const out = await service.toggleApproval(id);
+    res.json(out);
+  } catch (err) {
+    console.error("toggleApproval error:", err);
+    res.status(400).json({ error: err.message });
+  }
+}
+
+
 module.exports = {
-  createCommentary,
-  deleteCommentary,
-  toggleApproval,
-  updateCommentary,
-  addVerse,
-  removeVerse,
+  add,
+  update,
+  remove,
   exportOne,
-  listCommentaries,
+  get,
   getById,
+  toggleApproval,
 };

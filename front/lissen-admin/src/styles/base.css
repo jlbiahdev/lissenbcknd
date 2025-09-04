@@ -241,3 +241,16 @@ textarea{
 .icon-btn.danger:hover {
   background: rgba(198,40,40,0.1);
 }
+
+.toast {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  box-shadow: 0 6px 20px rgba(0,0,0,.15);
+  font-weight: 600;
+  z-index: 9999;
+}
+.toast.success { background: #e6ffed; color: #0a5; border: 1px solid #b4f1c9; }
+.toast.error   { background: #ffecec; color: #b00020; border: 1px solid #ffc1c1; }

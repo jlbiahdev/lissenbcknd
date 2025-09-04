@@ -11,6 +11,38 @@ const { Op } = require('sequelize');
 const { formatToExport, formatToView } = require('../helpers/exportFormatter');
 
 // ----------------------- Helpers -----------------------
+
+// Utilisé pour garder le payload attendu par l'UI (row.commentary / row.verses)
+function toViewRow(c) {
+  return {
+    commentary: {
+      id: c.id,
+      title: c.title,
+      text: c.text ?? null,
+      approved: !!c.approved,
+      updatedAt: c.updatedAt ?? c.updated_at ?? null,
+    },
+    verses: (c.verses || []).map(v => ({
+      id: v.id,
+      number: v.number,
+      chapter: {
+        id: v.chapter?.id ?? null,
+        number: v.chapter?.number ?? null,
+        book: {
+          id: v.chapter?.book?.id ?? null,
+          code: v.chapter?.book?.code ?? "",
+          name: v.chapter?.book?.name ?? "",
+        },
+      },
+    })),
+  };
+}
+
+function toPosInt(v) {
+  const n = Number(v);
+  return Number.isInteger(n) && n > 0 ? n : undefined;
+}
+
 async function ensureVersesExist(verseIds, t) {
   if (!Array.isArray(verseIds) || verseIds.length === 0) {
     throw new Error("verse_ids must be a non-empty array");
@@ -53,14 +85,51 @@ async function unlinkCommentaryFromVerse(commentaryId, verseId, t) {
 }
 
 function toExportShape(commentary, verses) {
-  // shape attendu par formatToExport (compat ancien “Meditation”)
   return {
     id: commentary.id,
     approved: commentary.approved,
     commentary: commentary.text ?? null,
-    commentaryUpdatedAt: commentary.commentaryUpdatedAt ?? null,
+    updatedAt: commentary.updatedAt ?? null,
     verses, // Verse avec include Chapter->Book
   };
+}
+
+// --- helpers de validation & titre ---
+
+function assertSameBookChapterContiguous(verses) {
+  if (!verses.length) throw new Error("verseIds cannot be empty");
+
+  // même livre + même chapitre
+  const bookId = verses[0].chapter.book.id;
+  const chapNo = verses[0].chapter.number;
+  for (const v of verses) {
+    if (v.chapter.book.id !== bookId) {
+      throw new Error("All verseIds must belong to the same book");
+    }
+    if (v.chapter.number !== chapNo) {
+      throw new Error("All verseIds must belong to the same chapter");
+    }
+  }
+
+  // contiguïté (par numéros)
+  const nums = verses.map(v => v.number).sort((a,b)=>a-b);
+  for (let i = 1; i < nums.length; i++) {
+    if (nums[i] !== nums[i-1] + 1) {
+      throw new Error("verseIds must form a contiguous sequence");
+    }
+  }
+}
+
+function computeTitleFromVerses(verses) {
+  if (!verses?.length) return "";
+  // on suppose même livre + chapitre (déjà validé)
+  const bookName = verses[0].chapter.book.name || "";
+  const ch = verses[0].chapter.number;
+  const nums = verses.map(v => v.number).sort((a,b)=>a-b);
+  const first = nums[0];
+  const last  = nums[nums.length - 1];
+  const suffix = (first === last) ? `${first}` : `${first}-${last}`;
+  return `${bookName} ${ch}:${suffix}`;
 }
 
 // ------------------------- API -------------------------
@@ -70,7 +139,7 @@ function toExportShape(commentary, verses) {
  * @param {string} bookCode  - optionnel, sert pour le titre par défaut
  * @param {number[]} verse_ids
  */
-async function insert(bookCode, verse_ids) {
+async function add(bookCode, verse_ids) {
   return sequelize.transaction(async (t) => {
     await ensureVersesExist(verse_ids, t);
 
@@ -87,6 +156,69 @@ async function insert(bookCode, verse_ids) {
   });
 }
 
+async function update(id, { text, verseIds }) {
+  return sequelize.transaction(async (t) => {
+    const c = await Commentary.findByPk(id, { transaction: t });
+    if (!c) throw new Error('Commentary not found');
+
+    let somethingChanged = false;
+    let newVerses = null;
+
+    // 1) Si verseIds fourni → remplacement intégral après validation LISSEN
+    if (Array.isArray(verseIds)) {
+      const uniqIds = Array.from(new Set(verseIds.map(Number).filter(n => Number.isInteger(n) && n > 0)));
+      if (uniqIds.length === 0) throw new Error("verseIds must be a non-empty array of integers");
+
+      const verses = await ensureVersesExist(uniqIds, t);
+      // include Book/Chapter déjà dans ensureVersesExist
+      assertSameBookChapterContiguous(verses);
+
+      // remplace tous les liens
+      await CommentaryVerse.destroy({ where: { commentary_id: id }, transaction: t });
+      await linkCommentaryToVerses(id, uniqIds, t);
+
+      // titre recalculé (bookName)
+      const title = computeTitleFromVerses(verses);
+      c.title = title;
+      somethingChanged = true;
+      newVerses = verses;
+    }
+
+    // 2) Texte
+    if (typeof text === 'string' && text !== c.text) {
+      c.text = text;
+      somethingChanged = true;
+    }
+
+    // 3) approved
+    if (somethingChanged) {
+      c.approved = false;
+    }
+
+    await c.save({ transaction: t });
+
+    // 4) Recharger pour réponse complète
+    const full = await Commentary.findByPk(c.id, {
+      transaction: t,
+      include: [{
+        model: Verse, as: 'verses',
+        through: { attributes: [] },
+        include: [{ model: Chapter, as: 'chapter', include: [{ model: Book, as: 'book' }] }],
+        order: [['number','ASC']]
+      }]
+    });
+
+    return {
+      id: full.id,
+      title: full.title,
+      text: full.text ?? null,
+      approved: !!full.approved,
+      updatedAt: full.updatedAt ?? full.updated_at ?? null,
+      verses: full.verses,
+    };
+  });
+}
+
 /**
  * Supprime un commentaire (cascade supprime les liens).
  */
@@ -95,72 +227,6 @@ async function remove(id) {
     const c = await Commentary.findByPk(id, { transaction: t });
     if (!c) throw new Error('Commentary not found');
     await Commentary.destroy({ where: { id }, transaction: t });
-    return { success: true };
-  });
-}
-
-/**
- * Bascule approved du commentaire (par ID de commentaire).
- * @param {number} id - commentary id
- */
-async function toggleApproval(id) {
-  return sequelize.transaction(async (t) => {
-    const c = await Commentary.findByPk(id, { transaction: t });
-    if (!c) throw new Error('Commentary not found');
-    c.approved = !c.approved;
-    await c.save({ transaction: t });
-    return c;
-  });
-}
-
-/**
- * Met à jour le contenu d’un commentaire, reset approved=false et date de MAJ.
- * @param {number} id
- * @param {string|null} text
- */
-async function update(id, text) {
-  return sequelize.transaction(async (t) => {
-    const c = await Commentary.findByPk(id, { transaction: t });
-    if (!c) throw new Error('Commentary not found');
-    c.text = text ?? null;
-    c.approved = false;
-    c.commentaryUpdatedAt = new Date();
-    await c.save({ transaction: t });
-    return c;
-  });
-}
-
-/**
- * Lie un verset au commentaire (idempotent).
- * @param {number} id - commentary id
- * @param {number} verseId
- */
-async function addVerse(id, verseId) {
-  return sequelize.transaction(async (t) => {
-    const c = await Commentary.findByPk(id, { transaction: t });
-    if (!c) throw new Error('Commentary not found');
-    await ensureVersesExist([verseId], t);
-
-    await CommentaryVerse.findOrCreate({
-      where: { commentary_id: id, verse_id: verseId },
-      defaults: { commentary_id: id, verse_id: verseId },
-      transaction: t,
-    });
-
-    return c;
-  });
-}
-
-/**
- * Délie un verset du commentaire ; supprime le commentaire s’il n’a plus de versets.
- * @param {number} id - commentary id
- * @param {number} verseId
- */
-async function removeVerse(id, verseId) {
-  return sequelize.transaction(async (t) => {
-    const c = await Commentary.findByPk(id, { transaction: t });
-    if (!c) throw new Error('Commentary not found');
-    await unlinkCommentaryFromVerse(id, verseId, t);
     return { success: true };
   });
 }
@@ -193,39 +259,63 @@ async function exports(id) {
 }
 
 /**
- * Liste des commentaires, avec leurs versets (pour affichage).
- * Retourne un tableau formaté via formatToView.
+ * Liste des commentaires avec filtres:
+ * - bookCode (exact) OU bookName (ILIKE %…%)
+ * - chapterNum
+ * - verseNum
+ * - approved = 0|1
  */
-async function get() {
+async function get({ bookName, bookCode, chapterNum, verseNum, approved }) {
+  const verseWhere = {};
+  const chapterWhere = {};
+  const bookWhere = {};
+  const commentaryWhere = {};
+
+  const cNum = toPosInt(chapterNum);
+  const vNum = toPosInt(verseNum);
+
+  if (typeof approved !== 'undefined' && approved !== '') {
+    const flag = String(approved) === '1';
+    commentaryWhere.approved = flag;
+  }
+  if (cNum !== undefined) chapterWhere.number = cNum;
+  if (vNum !== undefined) verseWhere.number = vNum;
+
+  const bn = (bookName ?? '').trim();
+  const bc = (bookCode ?? '').trim();
+  if (bc) {
+    bookWhere.code = bc; // match exact sur code
+  } else if (bn) {
+    bookWhere.name = { [Op.iLike]: `%${bn}%` }; // ILIKE sur nom
+  }
+
   const rows = await Commentary.findAll({
+    where: Object.keys(commentaryWhere).length ? commentaryWhere : undefined,
     include: [{
       model: Verse,
       as: 'verses',
+      required: true,
+      where: Object.keys(verseWhere).length ? verseWhere : undefined,
       through: { attributes: [] },
       include: [{
         model: Chapter, as: 'chapter',
-        include: [{ model: Book, as: 'book' }]
-      }]
+        required: true,
+        where: Object.keys(chapterWhere).length ? chapterWhere : undefined,
+        include: [{
+          model: Book, as: 'book',
+          required: Object.keys(bookWhere).length > 0,
+          where: Object.keys(bookWhere).length ? bookWhere : undefined,
+        }],
+      }],
     }],
-    order: [['id', 'ASC']],
+    order: [
+      ['id', 'ASC'],
+      [{ model: Verse, as: 'verses' }, 'id', 'ASC'],
+    ],
+    distinct: true,
   });
 
-//   rows.map(r => r.toJSON()).forEach(r => console.log('Retrieved commentary:', r));
-  const adapted = rows.map(c => ({
-    id: c.id,
-    title: c.title,
-    text: c.text ?? null,
-    approved: c.approved,
-    createdAt: c.createdAt,
-    updatedAt: c.updatedAt ?? null,
-    verses: c.verses,
-  }));
-
-//   console.log('Adapted commentaries:', adapted);
-
-  const result = adapted.map(formatToView);
-
-  return result;
+  return rows.map(toViewRow);
 }
 
 /**
@@ -258,65 +348,20 @@ async function getById(id) {
   return formatToView(adapted);
 }
 
-/**
- * Filtre par (bookName like), (chapterNum), (verseNum).
- */
-async function filter(bookName, chapterNum, verseNum) {
-  const verseWhere = {};
-  if (Number.isFinite(verseNum)) verseWhere.number = verseNum;
-
-  console.log('Filter params:', { bookName, chapterNum, verseNum, verseWhere });
-  
-  const chapterWhere = {};
-  if (Number.isFinite(chapterNum)) chapterWhere.number = chapterNum;
-
-  const bookWhere = {};
-  if (bookName) bookWhere.name = { [Op.iLike]: `%${bookName}%` };
-
-  const rows = await Commentary.findAll({
-    include: [{
-      model: Verse,
-      as: 'verses',
-      required: true,
-      where: Object.keys(verseWhere).length ? verseWhere : undefined,
-      through: { attributes: [] },
-      include: [{
-        model: Chapter, as: 'chapter',
-        required: true,
-        where: Object.keys(chapterWhere).length ? chapterWhere : undefined,
-        include: [{
-          model: Book, as: 'book',
-          required: Object.keys(bookWhere).length > 0,
-          where: Object.keys(bookWhere).length ? bookWhere : undefined,
-        }]
-      }]
-    }],
-    order: [['id', 'ASC']],
-  });
-
-  const adapted = rows.map(c => ({
-    id: c.id,
-    title: c.title,
-    text: c.text ?? null,
-    approved: c.approved,
-    createdAt: c.createdAt,
-    updatedAt: c.updatedAt ?? null,
-    verses: c.verses,
-  }));
-
-  console.log('Adapted commentaries for view:', adapted);
-  return adapted.map(formatToView);
+async function toggleApproval(id) {
+  const c = await Commentary.findByPk(id);
+  if (!c) throw new Error('Commentary not found');
+  c.approved = !c.approved;
+  await c.save();
+  return { id: c.id, approved: c.approved };
 }
 
 module.exports = {
-  insert,
-  toggleApproval,
+  add,
   update,
-  addVerse,
   remove,
-  removeVerse,
   exports,
+  toggleApproval,
   get,
   getById,
-  filter
 };

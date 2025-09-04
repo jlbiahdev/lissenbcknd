@@ -5,15 +5,17 @@ import { API_BASE } from "../api/client";
 export default function CommentaryListPage() {
   // --------------------- State ---------------------
   const [filters, setFilters] = useState({ bookName: "", chapterNum: "", verseNum: "" });
-  const [rows, setRows] = useState([]);
+  const [rows, setRows] = useState([]);           // liste: [{ commentary: {...}, verses: [...] }]
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
 
-  const [editing, setEditing] = useState(null); // commentary (full) or null
+  const [editing, setEditing] = useState(null);   // détail: { commentary: {...}, verses: [...] }
   const [textDraft, setTextDraft] = useState("");
+
+  const [toast, setToast] = useState(null);       // { kind: "success"|"error", msg: string }
 
   // --------------------- Derived ---------------------
   const total = rows.length;
@@ -23,11 +25,23 @@ export default function CommentaryListPage() {
     return rows.slice(start, start + pageSize);
   }, [rows, page, pageSize]);
 
+  // --------------------- Toast style ---------------------
+  const toastStyle = {
+    position: "fixed",
+    top: 12,
+    right: 12,
+    padding: "10px 14px",
+    borderRadius: 6,
+    boxShadow: "0 6px 20px rgba(0,0,0,.15)",
+    fontWeight: 600,
+    zIndex: 9999,
+    background: toast?.kind === "error" ? "#ffecec" : "#e6ffed",
+    color: toast?.kind === "error" ? "#b00020" : "#0a5",
+    border: `1px solid ${toast?.kind === "error" ? "#ffc1c1" : "#b4f1c9"}`
+  };
+
   // --------------------- Effects ---------------------
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
 
   async function load() {
     setLoading(true);
@@ -51,6 +65,11 @@ export default function CommentaryListPage() {
   }
 
   // --------------------- Handlers ---------------------
+  function showToast(msg, kind = "success") {
+    setToast({ msg, kind });
+    setTimeout(() => setToast(null), 2000);
+  }
+
   function updateFilter(name, val) {
     setFilters(prev => ({ ...prev, [name]: val }));
   }
@@ -69,9 +88,9 @@ export default function CommentaryListPage() {
     try {
       const res = await fetch(`${API_BASE}/commentaries/${id}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const row = await res.json();
+      const row = await res.json(); // { commentary, verses }
       setEditing(row);
-      setTextDraft(row?.text ?? "");
+      setTextDraft(row?.commentary?.text ?? "");
     } catch (e) {
       alert("Impossible d’ouvrir le commentaire : " + (e?.message || ""));
     }
@@ -80,62 +99,103 @@ export default function CommentaryListPage() {
   async function saveText() {
     if (!editing) return;
     try {
-      const res = await fetch(`${API_BASE}/commentaries/${editing.id}`, {
+      const id = editing.commentary.id;
+      const res = await fetch(`${API_BASE}/commentaries/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: textDraft }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const updated = await res.json();
+      const updated = await res.json(); // { id, title, text, approved, updatedAt, verses? }
 
       // Maj liste
       setRows(prev => prev.map(r =>
-        r.id === updated.id
+        r.commentary.id === updated.id
           ? {
               ...r,
-              commentary: updated.text ?? null,
-              approved: updated.approved,
-              commentaryUpdatedAt: updated.commentaryUpdatedAt
+              commentary: {
+                ...r.commentary,
+                title: updated.title,
+                text: updated.text ?? null,
+                approved: updated.approved,
+                updatedAt: updated.updatedAt
+              },
+              verses: updated.verses ?? r.verses
             }
           : r
       ));
 
-      // Maj modal
+      // Maj modale
       setEditing(prev =>
         prev
           ? {
               ...prev,
-              commentary: updated.text ?? null,
-              approved: updated.approved,
-              commentaryUpdatedAt: updated.commentaryUpdatedAt
+              commentary: {
+                ...prev.commentary,
+                title: updated.title,
+                text: updated.text ?? null,
+                approved: updated.approved,
+                updatedAt: updated.updatedAt,
+              },
+              verses: updated.verses ?? prev.verses
             }
           : prev
       );
 
-      alert("Commentaire enregistré (désapprouvé jusqu’à validation).");
+      showToast("Commentaire enregistré (appr. réinitialisée)", "success");
     } catch (e) {
-      alert("Échec de l’enregistrement : " + (e?.message || ""));
+      showToast("Échec de l'enregistrement", "error");
+      console.error(e);
     }
   }
 
-  async function toggleApprove(row) {
+  async function toggleApprove(commentary) {
     try {
-      // Optimistic
-      setRows(prev => prev.map(r => r.id === row.id ? { ...r, approved: !r.approved } : r));
-      if (editing?.id === row.id) setEditing(prev => prev ? { ...prev, approved: !prev.approved } : prev);
+      // Optimistic (liste)
+      setRows(prev => prev.map(r =>
+        r.commentary.id === commentary.id
+          ? { ...r, commentary: { ...r.commentary, approved: !r.commentary.approved } }
+          : r
+      ));
 
-      const res = await fetch(`${API_BASE}/commentaries/${row.id}/toggle`, { method: "POST" });
+      // Optimistic (modale)
+      if (editing?.commentary?.id === commentary.id) {
+        setEditing(prev =>
+          prev ? { ...prev, commentary: { ...prev.commentary, approved: !prev.commentary.approved } } : prev
+        );
+      }
+
+      const res = await fetch(`${API_BASE}/commentaries/${commentary.id}/toggle`, { method: "POST" });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const upd = await res.json();
+      const upd = await res.json(); // { id, approved }
 
       // Sync
-      setRows(prev => prev.map(r => r.id === row.id ? { ...r, approved: upd.approved } : r));
-      if (editing?.id === row.id) setEditing(prev => prev ? { ...prev, approved: upd.approved } : prev);
+      setRows(prev => prev.map(r =>
+        r.commentary.id === commentary.id
+          ? { ...r, commentary: { ...r.commentary, approved: upd.approved } }
+          : r
+      ));
+      if (editing?.commentary?.id === commentary.id) {
+        setEditing(prev =>
+          prev ? { ...prev, commentary: { ...prev.commentary, approved: upd.approved } } : prev
+        );
+      }
+
+      showToast(upd.approved ? "Commentaire approuvé" : "Approbation retirée", "success");
     } catch (e) {
       // Rollback
-      setRows(prev => prev.map(r => r.id === row.id ? { ...r, approved: row.approved } : r));
-      if (editing?.id === row.id) setEditing(prev => prev ? { ...prev, approved: row.approved } : prev);
-      alert("Échec de la validation : " + (e?.message || ""));
+      setRows(prev => prev.map(r =>
+        r.commentary.id === commentary.id
+          ? { ...r, commentary: { ...r.commentary, approved: commentary.approved } }
+          : r
+      ));
+      if (editing?.commentary?.id === commentary.id) {
+        setEditing(prev =>
+          prev ? { ...prev, commentary: { ...prev.commentary, approved: commentary.approved } } : prev
+        );
+      }
+      console.error(e);
+      showToast("Échec de la mise à jour de l’approbation", "error");
     }
   }
 
@@ -144,10 +204,13 @@ export default function CommentaryListPage() {
     try {
       const res = await fetch(`${API_BASE}/commentaries/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      setRows(prev => prev.filter(r => r.id !== id));
-      if (editing?.id === id) setEditing(null);
+
+      setRows(prev => prev.filter(r => r.commentary.id !== id));
+      if (editing?.commentary?.id === id) setEditing(null);
+      showToast("Commentaire supprimé", "success");
     } catch (e) {
-      alert("Échec de la suppression : " + (e?.message || ""));
+      showToast("Échec de la suppression", "error");
+      console.error(e);
     }
   }
 
@@ -155,18 +218,21 @@ export default function CommentaryListPage() {
     if (!editing) return;
     if (!window.confirm("Retirer ce verset du commentaire ?")) return;
     try {
-      const res = await fetch(`${API_BASE}/commentaries/${editing.id}/verses/${verseId}`, { method: "DELETE" });
+      const res = await fetch(`${API_BASE}/commentaries/${editing.commentary.id}/verses/${verseId}`, { method: "DELETE" });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      // Maj modal
+
+      // Maj modale
       setEditing(prev => prev ? { ...prev, verses: (prev.verses || []).filter(v => v.id !== verseId) } : prev);
       // Maj liste
       setRows(prev => prev.map(r =>
-        r.id === editing.id
+        r.commentary.id === editing.commentary.id
           ? { ...r, verses: (r.verses || []).filter(v => v.id !== verseId) }
           : r
       ));
+      showToast("Verset retiré du commentaire", "success");
     } catch (e) {
-      alert("Échec du retrait : " + (e?.message || ""));
+      showToast("Échec du retrait du verset", "error");
+      console.error(e);
     }
   }
 
@@ -174,8 +240,14 @@ export default function CommentaryListPage() {
   return (
     <div className="verse-page">
       <header className="page-header">
+        {toast && (
+          <div style={toastStyle} role="status" aria-live="polite">
+            {toast.msg}
+          </div>
+        )}
+
         <div className="title-wrap">
-          <h1 className="title">Commentaries Bibliques</h1>
+          <h1 className="title">Commentaires Bibliques</h1>
           <span className="sub">Liste et gestion des commentaires</span>
         </div>
         <div className="header-actions">
@@ -230,7 +302,7 @@ export default function CommentaryListPage() {
                   <th>Aperçu</th>
                   <th>Approuvé</th>
                   <th>Maj</th>
-                  <th style={{width:140 }}>Actions</th>
+                  <th style={{width:140}}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -239,38 +311,19 @@ export default function CommentaryListPage() {
                 ) : (
                   pageRows.map(row => (
                     <tr key={row.commentary.id}>
-                        <td>{row.commentary.id}</td>
-                        <td>{row.commentary.title || "Commentaire"}</td>
-                        <td title={row.commentary.text || "—"} className="text">{truncate(row.commentary.text || "—", 120)}</td>
-                        <td>{row.commentary.approved ? <span className="badge ok">Oui</span> : <span className="badge">Non</span>}</td>
-                        <td>{formatDate(row.commentary.updatedAt)}</td>
-                        <td className="row-actions">
-                            <IconButton
-                                title="Voir / Éditer"
-                                onClick={() => openEdit(row.commentary.id)}
-                                className="pri"
-                            >
-                                <EditIcon />
-                            </IconButton>
-
-                            <IconButton
-                                title={row.commentary.approved ? "Retirer l’approbation" : "Approuver"}
-                                onClick={() => toggleApprove(row.commentary)}
-                                className={row.commentary.approved ? "danger" : "success"}
-                            >
-                                {row.commentary.approved ? <UndoIcon /> : <CheckIcon />}
-                            </IconButton>
-
-                            <IconButton
-                                title="Supprimer"
-                                onClick={() => removeCommentary(row.commentary.id)}  // ✅ passer le commentaire, pas la ligne entière
-                                className="danger"
-                            >
-                                <TrashIcon />
-                            </IconButton>
-                        </td>
-
-
+                      <td>{row.commentary.id}</td>
+                      <td>{row.commentary.title || "Commentaire"}</td>
+                      <td title={row.commentary.text || "—"} className="text">{truncate(row.commentary.text || "—", 120)}</td>
+                      <td>{row.commentary.approved ? <span className="badge ok">Oui</span> : <span className="badge">Non</span>}</td>
+                      <td>{formatDate(row.commentary.updatedAt)}</td>
+                      <td className="row-actions">
+                        <IconButton title="Voir / Éditer" onClick={() => openEdit(row.commentary.id)} className="pri">
+                          <EditIcon />
+                        </IconButton>
+                        <IconButton title="Supprimer" onClick={() => removeCommentary(row.commentary.id)} className="danger">
+                          <TrashIcon />
+                        </IconButton>
+                      </td>
                     </tr>
                   ))
                 )}
@@ -300,10 +353,10 @@ export default function CommentaryListPage() {
       </section>
 
       {editing && (
-        <Modal title={`Commentary #${editing.id}`} onClose={() => setEditing(null)}>
+        <Modal title={`Commentary #${editing.commentary.id}`} onClose={() => setEditing(null)}>
           <div className="form">
             <div className="muted">Titre</div>
-            <div className="mb-8">{editing.title || "Commentaire"}</div>
+            <div className="mb-8">{editing.commentary.title || "Commentaire"}</div>
 
             <label>Texte</label>
             <textarea
@@ -317,7 +370,7 @@ export default function CommentaryListPage() {
             <ul className="list flat">
               {(editing.verses || []).length === 0 && <li key="empty" className="muted">Aucun verset lié</li>}
               {(editing.verses || []).map(v => (
-                <li key={`link-${editing.id}-${v.id}`} className="row between">
+                <li key={`link-${editing.commentary.id}-${v.id}`} className="row between">
                   <span><VerseRef v={v} /></span>
                   <button className="btn sm ghost" onClick={() => unlinkVerse(v.id)}>Retirer</button>
                 </li>
@@ -328,10 +381,10 @@ export default function CommentaryListPage() {
               <button className="btn ghost" onClick={() => setEditing(null)}>Fermer</button>
               <button className="btn pri" onClick={saveText}>Enregistrer</button>
               <button
-                className={`btn ${editing.approved ? "danger" : "success"}`}
-                onClick={() => toggleApprove(editing)}
+                className={`btn ${editing.commentary.approved ? "danger" : "success"}`}
+                onClick={() => toggleApprove(editing.commentary)}
               >
-                {editing.approved ? "Unapprove" : "Approve"}
+                {editing.commentary.approved ? "Désapprouver" : "Approuver"}
               </button>
             </div>
           </div>
@@ -344,12 +397,10 @@ export default function CommentaryListPage() {
 // --------------------- Subcomponents ---------------------
 
 function VerseRef({ v }) {
-  const bookCode = v?.chapter?.book?.code ?? "";
   const ch = v?.chapter?.number ?? "?";
   const ve = v?.number ?? "?";
   return (
     <span className="refcell">
-      <span className="book">{bookCode}</span>{" "}
       <span className="cv">{ch}:{ve}</span>
     </span>
   );
@@ -389,33 +440,7 @@ function IconButton({ onClick, title, ariaLabel, children, className = "" }) {
   );
 }
 
-// --- Icônes (SVG inline) ---
-function EyeIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-      <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z" fill="none" stroke="currentColor" strokeWidth="2"/>
-      <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" strokeWidth="2"/>
-    </svg>
-  );
-}
-
-function CheckIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-      <path d="M20 6L9 17l-5-5" fill="none" stroke="currentColor" strokeWidth="2"/>
-    </svg>
-  );
-}
-
-function UndoIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-      <path d="M7 7h7a5 5 0 110 10H6" fill="none" stroke="currentColor" strokeWidth="2"/>
-      <path d="M7 7l3 3M7 7l3-3" fill="none" stroke="currentColor" strokeWidth="2"/>
-    </svg>
-  );
-}
-
+// --- Icônes ---
 function TrashIcon() {
   return (
     <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
@@ -423,7 +448,6 @@ function TrashIcon() {
     </svg>
   );
 }
-
 function EditIcon() {
   return (
     <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
@@ -435,13 +459,11 @@ function EditIcon() {
 
 // --------------------- Utils ---------------------
 function truncate(str, n) { return str && str.length > n ? str.slice(0, n - 1) + "…" : str; }
-
 function formatDate(iso) {
   if (!iso) return "—";
   const d = new Date(iso);
   return new Intl.DateTimeFormat(undefined, { year: "numeric", month: "2-digit", day: "2-digit" }).format(d);
 }
-
 function useLockBodyScroll() {
   useEffect(() => {
     const { overflow } = document.body.style;
