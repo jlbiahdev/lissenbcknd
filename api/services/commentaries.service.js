@@ -129,7 +129,7 @@ async function add(verse_ids) {
     // 1) charger les versets et vérifier existence
     const verses = await Verse.findAll({
       where: { id: { [Op.in]: verse_ids } },
-      attributes: ['id', 'chapterId', 'number', 'bookId', 'chapterNum', 'verseNum', 'text'],
+      attributes: ['id', 'chapterId', 'number', 'text', 'refs'],
       include: [{
         model: Chapter, as: 'chapter', attributes: ['id', 'number', 'bookId'],
         include: [{ model: Book, as: 'book', attributes: ['id', 'name', 'code'] }]
@@ -345,8 +345,9 @@ async function get({ bookName, bookCode, chapterNum, verseNum, approved }) {
       }],
     }],
     order: [
+      [{ model: Verse, as: 'verses' }, 'chapterId', 'ASC'],
+      [{ model: Verse, as: 'verses' }, 'number', 'ASC'],
       ['id', 'ASC'],
-      [{ model: Verse, as: 'verses' }, 'id', 'ASC'],
     ],
     distinct: true,
   });

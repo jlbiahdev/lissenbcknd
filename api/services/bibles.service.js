@@ -49,7 +49,7 @@ async function getBook(bibleCode, bookId) {
 }
 
 // ---------------------- getVerses ---------------------
-async function getVerses(bibleCode, bookNameLike, chapter, textLike, isMeditative, isApproved) {
+async function getVerses(bibleCode, bookNameLike, chapter, textLike) {
   const verseWhere = {};
   if (textLike) verseWhere.text = { [Op.iLike]: `%${textLike}%` };
 
@@ -96,7 +96,7 @@ async function getVerses(bibleCode, bookNameLike, chapter, textLike, isMeditativ
     where: verseWhere,
     attributes: ['id', 'number', 'text', 'chapterId'],
     include,
-    order: [['id', 'ASC']],
+    order: [['chapterId', 'ASC'], ['number', 'ASC']],
     distinct: true, // évite les doublons avec belongsToMany
   });
 
@@ -114,22 +114,6 @@ async function getVerses(bibleCode, bookNameLike, chapter, textLike, isMeditativ
       code: book.code,
       bibleCode: bible?.code || null,
     } : null;
-
-    // Méditation unique (0..1) comme avant
-    // const firstMed = Array.isArray(j.meditations) && j.meditations.length > 0 ? j.meditations[0] : null;
-
-    // Les thèmes étaient exposés sous "Meditative.themes" dans l’ancien payload :
-    // on les dérive depuis le verset (via verse_themes)
-    const verseThemes = Array.isArray(j.themes)
-      ? j.themes.map(t => ({ id: t.id, name: t.name, categoryId: t.categoryId }))
-      : [];
-
-    // const Meditative = firstMed ? {
-    //   id: firstMed.id,
-    //   commentary: firstMed.text,
-    //   approved: firstMed.approved,
-    //   themes: verseThemes,
-    // } : null;
 
     // Payload final (plat), sans branches internes
     // console.log('j', j)
@@ -149,17 +133,6 @@ async function getVerses(bibleCode, bookNameLike, chapter, textLike, isMeditativ
     };
   });
 
-  // Filtres JS identiques à l’ancien service
-  if (isMeditative !== undefined) {
-    const meditative = Number(isMeditative) === 1;
-    items = items.filter(v => (meditative ? v.Meditative != null : v.Meditative == null));
-  }
-  if (isApproved !== undefined) {
-    const approved = Number(isApproved) === 1;
-    items = items.filter(v => v.Meditative?.approved === approved);
-  }
-
-  console.log('items', items)
   return items;
 }
 

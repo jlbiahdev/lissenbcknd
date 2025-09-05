@@ -23,6 +23,7 @@ async function add(req, res) {
       return res.status(400).json({ error: "verse_ids must be a non-empty array of integers" });
     }
 
+    console.log("Adding commentary for verses:", verse_ids);
     const commentary = await service.add(verse_ids);
     return res.status(201).json(commentary);
   } catch (err) {

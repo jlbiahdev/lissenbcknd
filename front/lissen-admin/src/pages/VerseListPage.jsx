@@ -1,10 +1,8 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import "../styles/index.css";
 import { API_BASE } from "../api/client";
 import IconButton from "../components/IconButton";
-import { Edit3 } from "lucide-react";
-
-const USE_MOCK = false;
+import { Edit3, FilePlus } from "lucide-react";
 
 export default function VerseListPage() {
 
@@ -26,11 +24,23 @@ export default function VerseListPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const [editing, setEditing] = useState(null); // verse object or null
+  const [editing, setEditing] = useState(null);
   const [editForm, setEditForm] = useState({ commentary: "", themes: [] });
   const [themes, setThemes] = useState([]);
 
-  // --------------------- Derived ---------------------
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createCtx, setCreateCtx] = useState(null);
+  const [rangeInput, setRangeInput] = useState("");
+  const [chapterCache, setChapterCache] = useState(new Map());
+  const [toast, setToast] = useState(null);
+
+// toast util (si tu ne l’as pas déjà)
+function showToast(msg, kind = "success") {
+  setToast({ msg, kind });
+  setTimeout(() => setToast(null), 2000);
+}
+
+  // --------------------- Memo ---------------------
   const availableBibles = useMemo(() => {
     const codes = rows.map(r => r?.Bible?.code).filter(Boolean);
     return Array.from(new Set(codes));
@@ -68,8 +78,8 @@ export default function VerseListPage() {
           sort,
         });
         if (!isActive) return;
-        setRows(items);
-        setTotal(total);
+        setRows(items || []);
+        setTotal(Number.isFinite(total) ? total : (items || []).length);
       } catch (e) {
         if (!isActive) return;
         setError(e?.message || "Une erreur est survenue.");
@@ -99,7 +109,7 @@ export default function VerseListPage() {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         const data = await r.json();
         if (!alive) return;
-        setThemes(data);
+        setThemes(Array.isArray(data) ? data : []);
       } catch (_) {}
     })();
     return () => { alive = false; };
@@ -139,7 +149,8 @@ export default function VerseListPage() {
       await apiPut(`${API_BASE}/meditations/${editing.id}/edit`, payload);
       setEditing(null);
     } catch (e) {
-      alert("Échec de l'enregistrement: " + (e?.message || ""));
+      showToast("Échec de l'enregistrement", "error");
+      console.error(e);
     }
   }
 
@@ -169,7 +180,8 @@ export default function VerseListPage() {
           ? { ...r, Meditative: verse.Meditative ?? null }
           : r
       ));
-      alert("Échec de l’opération : " + (e?.message || ""));
+      showToast("Échec de l’opération", "error");
+      console.error(e);
     }
   }
 
@@ -206,6 +218,76 @@ export default function VerseListPage() {
     setSort({ by: "ref", dir: "asc" });
   }
 
+
+// --------------------- Handlers ---------------------
+// fetch versets d’un chapitre avec cache local
+const fetchChapterVerses = useCallback(async (bookId, chapterNum) => {
+  const key = `${bookId}-${chapterNum}`;
+  const cached = chapterCache.get(key);
+  if (cached) return cached;
+
+  const res = await fetch(`${API_BASE}/books/${bookId}/${chapterNum}/verses`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const verses = await res.json(); // [{id, bookId, chapterNum, verseNum, text, refs}]
+
+  setChapterCache(prev => {
+    const next = new Map(prev);
+    next.set(key, verses);
+    return next;
+  });
+
+  return verses;
+}, [chapterCache]);
+
+function openCreateCommentary(verseRow) {
+  console.log("openCreateCommentary", verseRow);
+  const bookId = verseRow?.Book?.id ?? verseRow?.bookId;
+  const bookName = verseRow?.Book?.name ?? verseRow?.book ?? "";
+  const chapterNum = verseRow?.chapterNumber ?? verseRow?.chapter;
+  const verseNum = verseRow?.verseNum ?? verseRow?.number;
+
+  setCreateCtx({ bookId, bookName, chapterNum });
+  setRangeInput(String(verseNum || "")); // pré-rempli sur le verset cliqué
+  setCreateOpen(true);
+}
+
+async function createCommentary() {
+  if (!createCtx) return;
+  try {
+    const nums = parseContiguousRange(rangeInput);
+    if (nums.length === 0) {
+      showToast("Plage invalide. Ex: 1-3 ou 5", "error");
+      return;
+    }
+
+    const chapterVerses = await fetchChapterVerses(createCtx.bookId, createCtx.chapterNum);
+    console.log("chapterVerses:", chapterVerses);
+    const byNum = new Map(chapterVerses.map(v => [ (v.verseNum ?? v.number), v.id ]));
+    const verse_ids = nums.map(n => byNum.get(n)).filter(Boolean);
+
+    if (verse_ids.length !== nums.length) {
+      showToast("Impossible de résoudre tous les versets saisis", "error");
+      return;
+    }
+
+    const res = await fetch(`${API_BASE}/commentaries`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ verse_ids }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    setCreateOpen(false);
+    setCreateCtx(null);
+    showToast("Commentaire créé", "success");
+  } catch (e) {
+    console.error(e);
+    showToast("Échec de la création", "error");
+  }
+}
+
+
+console.log("Context:", createCtx);
   // --------------------- Render ---------------------
   return (
     <div className="verse-page">
@@ -282,8 +364,16 @@ export default function VerseListPage() {
                         <td title={v.text} className="text">{truncate(v.text, 180)}</td>
                         <td>{formatDate(upd)}</td>
                         <td className="row-actions">
-                          <IconButton title="Éditer" onClick={() => setEditing(v)} className="pri"> <Edit3 size={18} /> </IconButton>
-
+                          <IconButton title="Éditer" onClick={() => setEditing(v)} className="pri">
+                            <Edit3 size={18} />
+                          </IconButton>
+                          <IconButton
+                            title="Nouveau commentaire"
+                            onClick={() => openCreateCommentary(v)}  // v = verset de la ligne
+                            className="success"
+                          >
+                            <FilePlus size={18} />
+                          </IconButton>
                         </td>
                       </tr>
                     );
@@ -345,6 +435,24 @@ export default function VerseListPage() {
           </div>
         </Modal>
       )}
+
+      {createOpen && createCtx && (
+        <Modal title={`Nouveau commentaire — ${createCtx.bookName} Ch. ${createCtx.chapterNum}`} onClose={() => { setCreateOpen(false); setCreateCtx(null); }}>
+          <div className="form">
+            <div className="muted">Versets (contigus)</div>
+            <input
+              value={rangeInput}
+              onChange={e => setRangeInput(e.target.value)}
+              placeholder="Ex: 1-3 ou 5"
+            />
+            <div className="modal-actions">
+              <button className="btn ghost" onClick={() => { setCreateOpen(false); setCreateCtx(null); }}>Annuler</button>
+              <button className="btn pri" onClick={createCommentary}>Créer</button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
     </div>
   );
 }
@@ -492,13 +600,31 @@ async function apiPut(url, body) {
 }
 
 // --------------------- Utils ---------------------
-function truncate(str, n) { return str && str.length > n ? str.slice(0, n - 1) + "…" : str; }
-
 function formatDate(iso) {
   if (!iso) return "—";
   const d = new Date(iso);
   return new Intl.DateTimeFormat(undefined, { year: "numeric", month: "2-digit", day: "2-digit" }).format(d);
 }
+
+// parse "1-3" | "1,2,3" | "5"
+function parseContiguousRange(input) {
+  const s = (input || "").trim();
+  if (!s) return [];
+  if (/^\d+\s*-\s*\d+$/.test(s)) {
+    const [a, b] = s.split('-').map(x => parseInt(x.trim(), 10));
+    if (!Number.isInteger(a) || !Number.isInteger(b) || a <= 0 || b <= 0) return [];
+    const from = Math.min(a, b), to = Math.max(a, b);
+    return Array.from({ length: to - from + 1 }, (_, i) => from + i);
+  }
+  // "1" ou "1,2,3"
+  const arr = s.split(',').map(x => parseInt(x.trim(), 10)).filter(Number.isInteger);
+  if (arr.length <= 1) return arr;
+  arr.sort((x, y) => x - y);
+  for (let i = 1; i < arr.length; i++) if (arr[i] !== arr[i-1] + 1) return []; // contiguïté exigée
+  return arr;
+}
+
+function truncate(str, n) { return str && str.length > n ? str.slice(0, n - 1) + "…" : str; }
 
 function useLockBodyScroll() {
   useEffect(() => {
