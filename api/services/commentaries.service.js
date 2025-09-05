@@ -208,14 +208,16 @@ async function update(id, { text, verseIds }) {
       }]
     });
 
-    return {
+    const adapted = {
       id: full.id,
       title: full.title,
       text: full.text ?? null,
       approved: !!full.approved,
-      updatedAt: full.updatedAt ?? full.updated_at ?? null,
+      updatedAt: full.updatedAt ?? null,
       verses: full.verses,
     };
+
+    return formatToView(adapted);
   });
 }
 
@@ -329,7 +331,8 @@ async function getById(id) {
       through: { attributes: [] },
       include: [{
         model: Chapter, as: 'chapter',
-        include: [{ model: Book, as: 'book' }]
+        include: [{ model: Book, as: 'book' }],
+        order: [['number','ASC']]
       }]
     }],
   });
