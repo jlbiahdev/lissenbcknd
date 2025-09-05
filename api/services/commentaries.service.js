@@ -70,20 +70,6 @@ async function linkCommentaryToVerses(commentaryId, verseIds, t) {
   await CommentaryVerse.bulkCreate(rows, { ignoreDuplicates: true, transaction: t });
 }
 
-async function unlinkCommentaryFromVerse(commentaryId, verseId, t) {
-  await CommentaryVerse.destroy({
-    where: { commentary_id: commentaryId, verse_id: verseId },
-    transaction: t,
-  });
-  const remain = await CommentaryVerse.count({
-    where: { commentary_id: commentaryId },
-    transaction: t,
-  });
-  if (remain === 0) {
-    await Commentary.destroy({ where: { id: commentaryId }, transaction: t });
-  }
-}
-
 function toExportShape(commentary, verses) {
   return {
     id: commentary.id,
@@ -136,14 +122,48 @@ function computeTitleFromVerses(verses) {
 
 /**
  * Crée un commentaire (title par défaut) et le lie à une liste de versets.
- * @param {string} bookCode  - optionnel, sert pour le titre par défaut
  * @param {number[]} verse_ids
  */
-async function add(bookCode, verse_ids) {
+async function add(verse_ids) {
   return sequelize.transaction(async (t) => {
-    await ensureVersesExist(verse_ids, t);
+    // 1) charger les versets et vérifier existence
+    const verses = await Verse.findAll({
+      where: { id: { [Op.in]: verse_ids } },
+      attributes: ['id', 'chapterId', 'number', 'bookId', 'chapterNum', 'verseNum', 'text'],
+      include: [{
+        model: Chapter, as: 'chapter', attributes: ['id', 'number', 'bookId'],
+        include: [{ model: Book, as: 'book', attributes: ['id', 'name', 'code'] }]
+      }],
+      transaction: t,
+    });
+    if (verses.length !== verse_ids.length) {
+      const found = new Set(verses.map(v => v.id));
+      const missing = verse_ids.filter(id => !found.has(id));
+      throw new Error(`Some verse_ids do not exist: [${missing.join(', ')}]`);
+    }
 
-    const title = bookCode ? `Commentaire ${bookCode}` : 'Commentaire';
+    // 2) validations LISSEN : même livre, même chapitre, versets contigus
+    const bookIds    = new Set(verses.map(v => v.chapter.book.id));
+    const chapterIds = new Set(verses.map(v => v.chapter.id));
+    if (bookIds.size !== 1 || chapterIds.size !== 1) {
+      throw new Error('All verses must belong to the same book and the same chapter');
+    }
+
+    const nums = verses.map(v => v.number).sort((a,b)=>a-b);
+    for (let i = 1; i < nums.length; i++) {
+      if (nums[i] !== nums[i-1] + 1) {
+        throw new Error('Verses must be contiguous');
+      }
+    }
+
+    // 3) titre calculé: "<BookName> <chapterNum>:<from>-<to>" (ou :<n> si un seul)
+    const bookName   = verses[0].chapter.book.name;
+    const chapterNum = verses[0].chapter.number;
+    const from = nums[0], to = nums[nums.length - 1];
+    const range = (from === to) ? `${from}` : `${from}-${to}`;
+    const title = `${bookName} ${chapterNum}:${range}`;
+
+    // 4) créer commentaire + lier versets
     const commentary = await Commentary.create({
       title,
       text: null,
@@ -151,11 +171,23 @@ async function add(bookCode, verse_ids) {
       commentaryUpdatedAt: null,
     }, { transaction: t });
 
-    await linkCommentaryToVerses(commentary.id, verse_ids, t);
+    await CommentaryVerse.bulkCreate(
+      verse_ids.map(vid => ({ commentary_id: commentary.id, verse_id: vid })),
+      { ignoreDuplicates: true, transaction: t }
+    );
+
     return commentary;
   });
 }
 
+/**
+ * Met à jour un commentaire existant.
+ * @param {number} id - L'ID du commentaire à mettre à jour.
+ * @param {Object} param1 - Les nouvelles données du commentaire.
+ * @param {string} param1.text - Le nouveau texte du commentaire.
+ * @param {number[]} param1.verseIds - Les nouveaux IDs des versets associés.
+ * @returns {Promise<Object>} - Le commentaire mis à jour.
+ */
 async function update(id, { text, verseIds }) {
   return sequelize.transaction(async (t) => {
     const c = await Commentary.findByPk(id, { transaction: t });
@@ -223,6 +255,7 @@ async function update(id, { text, verseIds }) {
 
 /**
  * Supprime un commentaire (cascade supprime les liens).
+ * @param {number} id - L'ID du commentaire à supprimer.
  */
 async function remove(id) {
   return sequelize.transaction(async (t) => {
@@ -236,6 +269,7 @@ async function remove(id) {
 /**
  * Exporte un commentaire (par id) avec ses versets (Chapter->Book inclus),
  * transformé au format attendu par formatToExport.
+ * @param {number} id - L'ID du commentaire à exporter.
  */
 async function exports(id) {
   const c = await Commentary.findByPk(id);
@@ -322,6 +356,7 @@ async function get({ bookName, bookCode, chapterNum, verseNum, approved }) {
 
 /**
  * Détail d’un commentaire par id (avec versets).
+ * @param {number} id - L'ID du commentaire à récupérer.
  */
 async function getById(id) {
   const c = await Commentary.findByPk(id, {
@@ -351,6 +386,10 @@ async function getById(id) {
   return formatToView(adapted);
 }
 
+/**
+ * @param {number} id - L'ID du commentaire à récupérer.
+ * @returns {Promise<Object>} - Le commentaire récupéré.
+ */
 async function toggleApproval(id) {
   const c = await Commentary.findByPk(id);
   if (!c) throw new Error('Commentary not found');

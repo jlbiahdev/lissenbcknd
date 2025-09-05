@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import "../styles/index.css";
 import { API_BASE } from "../api/client";
+import IconButton from "../components/IconButton";
+import { Edit3 } from "lucide-react";
 
 const USE_MOCK = false;
 
@@ -111,33 +113,6 @@ export default function VerseListPage() {
 
   function onSort(by) {
     setSort(prev => ({ by, dir: prev.by === by && prev.dir === "asc" ? "desc" : "asc" }));
-  }
-
-  async function toggleMeditative(verse) {
-    const currentMedit = !!(verse.is_meditative ?? verse.Meditative); // bool ou présence assoc
-    const newVal = !currentMedit;
-
-    // optimistic UI
-    setRows(prev => prev.map(r =>
-      r.id === verse.id
-        ? { ...r, is_meditative: newVal, Meditative: newVal ? (r.Meditative || {}) : null }
-        : r
-    ));
-    try {
-      if (newVal) {
-        await apiPost(`${API_BASE}/meditations/${verse.id}/add`, { });
-      } else {
-        await apiPost(`${API_BASE}/meditations/${verse.id}/remove`, { });
-      }
-    } catch (e) {
-      // rollback on error
-      setRows(prev => prev.map(r =>
-        r.id === verse.id
-          ? { ...r, is_meditative: currentMedit, Meditative: verse.Meditative }
-          : r
-      ));
-      alert("Échec de la mise à jour: " + (e?.message || ""));
-    }
   }
 
   async function save() {
@@ -275,22 +250,6 @@ export default function VerseListPage() {
           <label>Texte contient</label>
           <input value={filters.q} onChange={e => updateFilter("q", e.target.value)} placeholder="Rechercher..." />
         </div>
-        <div className="field">
-          <label>Méditatif</label>
-          <select value={filters.meditative} onChange={e => updateFilter("meditative", e.target.value)}>
-            <option value="all">Tous</option>
-            <option value="yes">Oui</option>
-            <option value="no">Non</option>
-          </select>
-        </div>
-        <div className="field">
-          <label>Approuvé</label>
-          <select value={filters.approved} onChange={e => updateFilter("approved", e.target.value)}>
-            <option value="all">Tous</option>
-            <option value="yes">Oui</option>
-            <option value="no">Non</option>
-          </select>
-        </div>
         <div className="field field--actions">
           <button className="btn ghost" onClick={resetFilters}>Réinitialiser</button>
         </div>
@@ -305,10 +264,8 @@ export default function VerseListPage() {
             <table className="table" role="table" aria-label="Liste des versets">
               <thead>
                 <tr>
-                  <Th label="Réf" sortKey="ref" sort={sort} onSort={onSort} />
+                  <Th label="Réf" sortKey="ref" sort={sort} onSort={onSort} width="140px" />
                   <Th label="Texte" sortKey="text" sort={sort} onSort={onSort} />
-                  <Th label="Méditatif" sortKey="is_meditative" sort={sort} onSort={onSort} />
-                  <Th label="Approuvé" sortKey="approved" sort={sort} onSort={onSort} />
                   <Th label="Maj" sortKey="updated_at" sort={sort} onSort={onSort} />
                   <th style={{width:120}}>Actions</th>
                 </tr>
@@ -318,23 +275,15 @@ export default function VerseListPage() {
                   <tr><td colSpan={6} className="empty">Aucun verset</td></tr>
                 ) : (
                   pageRows.map(v => {
-                    const isMedit = !!(v.is_meditative ?? v.Meditative);
-                    const isApproved = !!(v.approved ?? v.Meditative?.approved);
                     const upd = v.updated_at ?? v.Meditative?.updated_at;
                     return (
                       <tr key={v.id}>
                         <td className="ref"><RefCell v={v} /></td>
                         <td title={v.text} className="text">{truncate(v.text, 180)}</td>
-                        <td>
-                          <label className="switch" aria-label={`Déclarer méditatif: ${v.id}`}>
-                            <input type="checkbox" checked={isMedit} onChange={() => toggleMeditative(v)} />
-                            <span className="slider" />
-                          </label>
-                        </td>
-                        <td>{isApproved ? <span className="badge ok">Oui</span> : <span className="badge">Non</span>}</td>
                         <td>{formatDate(upd)}</td>
                         <td className="row-actions">
-                          <button className="btn sm" onClick={() => setEditing(v)}>Éditer</button>
+                          <IconButton title="Éditer" onClick={() => setEditing(v)} className="pri"> <Edit3 size={18} /> </IconButton>
+
                         </td>
                       </tr>
                     );
@@ -401,11 +350,11 @@ export default function VerseListPage() {
 }
 
 // --------------------- Components ---------------------
-function Th({ label, sortKey, sort, onSort }) {
+function Th({ label, sortKey, sort, onSort, width = "auto" }) {
   const active = sort.by === sortKey;
   const dir = active ? sort.dir : undefined;
   return (
-    <th role="columnheader" className={active ? `sorted ${dir}` : undefined}>
+    <th role="columnheader" className={active ? `sorted ${dir}` : undefined} style={{ width }}>
       <button className="th-btn" onClick={() => onSort(sortKey)}>
         <span>{label}</span>
         <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" className="chev">
@@ -519,8 +468,6 @@ async function fetchVerses({ filters, sort }) {
   if (filters.book) qs.set("book", filters.book);
   if (filters.chapter) qs.set("chapter", filters.chapter);
   if (filters.q) qs.set("textLike", filters.q);
-  if (filters.meditative !== "all") qs.set("isMeditative", filters.meditative === "yes" ? "1" : "0");
-  if (filters.approved !== "all") qs.set("isApproved", filters.approved === "yes" ? "1" : "0");
 
   // Tri (non utilisé côté backend, conservé si tu l’actives plus tard)
   qs.set("sort", `${sort.by}:${sort.dir}`);
@@ -534,12 +481,6 @@ async function fetchVerses({ filters, sort }) {
 
 async function apiPost(url, body) {
   const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
-}
-
-async function apiPatch(url, body) {
-  const res = await fetch(url, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }

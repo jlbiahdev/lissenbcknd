@@ -50,8 +50,8 @@ export default function Dashboard(){
   }, []);
 
   const QUICK_LINKS = [
-    { icon: "✍️", title: "Versets à commenter", sub: "Méditatif = oui", to: "/verses?meditative=yes", enabled: true },
-    { icon: "✅", title: "Approbations en attente", sub: "Commentaires non validés", to: "/verses?approved=no", enabled: true },
+    { icon: "📖", title: "Versets par Bibles", sub: "Créé des commentaires, méditations, articles, ...", to: "/verses", enabled: true },
+    { icon: "✍️", title: "Commentaires à approuver en attente", sub: "Commentaires non validés", to: "/commentaries", enabled: true },
 
     { icon: "🧘", title: "Méditations", sub: "Composer & publier", to: "/meditations", enabled: false },
     { icon: "📰", title: "Blog", sub: "Rédiger un article", to: "/blog", enabled: false },
@@ -66,8 +66,6 @@ export default function Dashboard(){
       <header className="dash-header">
         <h1 className="title">Tableau de bord</h1>
         <nav className="quick-nav">
-          <Link className="btn pri" to="/verses">Gérer les versets</Link>
-          <Link className="btn pri" to="/commentaries">Gérer les commentaires</Link>
           <Link className="btn ghost" to="/settings">Paramètres</Link>
         </nav>
       </header>

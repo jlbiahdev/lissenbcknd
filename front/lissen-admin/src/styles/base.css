@@ -220,11 +220,11 @@ textarea {  resize:vertical; }
 }
 
 .icon-btn { 
-  background: transparent; 
-  border: 0; 
-  padding: 0.125rem; 
-  line-height: 1; 
-  cursor: pointer; 
+  /* background: transparent;  */
+  /* border: 0;  */
+  /* padding: 0.125rem;  */
+  /* line-height: 1;  */
+  /* cursor: pointer;  */
 }
 .icon-btn:hover { opacity: .9; }
 
@@ -233,6 +233,29 @@ textarea {  resize:vertical; }
 .icon-btn.success{ color: var(--accent-2); }
 .icon-btn.danger { color: var(--danger); }
 .icon-btn.muted  { color: var(--muted); }
+
+/* styles/atoms/icon-button.css (ou dans index.css) */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--card-border, #2a2f3a);
+  background: var(--card-bg, #141821);
+  color: var(--fg, #e8ecf3);
+  cursor: pointer;
+  transition: transform .06s ease, background .15s ease, border-color .15s ease, color .15s ease;
+}
+.icon-btn svg { display: block; }
+
+.icon-btn:hover { transform: translateY(-1px); }
+.icon-btn:active { transform: translateY(0); }
+.icon-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+/* version “icon only” si tu l'utilises */
+.icon-btn.icon-only { padding: 6px; width: 32px; height: 32px; }
 
 
 /* Toast */

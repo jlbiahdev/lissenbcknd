@@ -16,7 +16,7 @@ export default function App() {
           <div className="spacer" />
           <nav className="nav">
             <NavLink to="/" end className={({isActive}) => isActive ? "active" : ""}>Tableau de bord</NavLink>
-            <NavLink to="/verses" className={({isActive}) => isActive ? "active" : ""}>Gérer les versets</NavLink>
+            {/* <NavLink to="/verses" className={({isActive}) => isActive ? "active" : ""}>Gérer les versets</NavLink> */}
             {/* <NavLink to="/queue" className={({isActive}) => isActive ? "active" : ""}>File de commentaires</NavLink> */}
           </nav>
         </div>

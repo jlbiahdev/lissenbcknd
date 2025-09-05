@@ -17,14 +17,13 @@ function toStr(v) {
 // Body: { bookCode?: string, verse_ids: number[] }
 async function add(req, res) {
   try {
-    const bookCode = toStr(req.body?.bookCode);
     const verse_ids = Array.isArray(req.body?.verse_ids) ? req.body.verse_ids.map(toInt).filter(Boolean) : null;
 
     if (!verse_ids || verse_ids.length === 0) {
       return res.status(400).json({ error: "verse_ids must be a non-empty array of integers" });
     }
 
-    const commentary = await service.add(bookCode, verse_ids);
+    const commentary = await service.add(verse_ids);
     return res.status(201).json(commentary);
   } catch (err) {
     console.error("add error:", err);

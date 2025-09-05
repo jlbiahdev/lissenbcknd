@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import "../styles/index.css";
-import { XCircle, Trash2, Edit3, CheckCircle2 } from "lucide-react";
+import IconButton from "../components/IconButton";
+import { XCircle, Trash2, Edit3 } from "lucide-react";
 import { API_BASE } from "../api/client";
 
 export default function CommentaryListPage() {
+
     // --------------------- State ---------------------
     const [filters, setFilters] = useState({ bookName: "", chapterNum: "", verseNum: "" });
     const [rows, setRows] = useState([]); // liste: [{ commentary: {...}, verses: [...] }]
@@ -545,21 +547,6 @@ function Modal({ title, children, onClose }) {
                 <div className="modal-body">{children}</div>
             </div>
         </div>
-    );
-}
-
-function IconButton({ onClick, title, ariaLabel, children, className = "", variant = "default" }) {
-    const cls = variant === "bare" ? (className || "") : `icon-btn ${className || ""}`;
-    return (
-        <button
-            type="button"
-            className={cls}
-            onClick={onClick}
-            title={title}
-            aria-label={ariaLabel || title}
-        >
-            {children}
-        </button>
     );
 }
 
