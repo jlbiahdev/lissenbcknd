@@ -16,7 +16,7 @@ const CategoryTheme = sequelize.define('CategoryTheme', {
     allowNull: false
   },
   keywords: {
-    type: DataTypes.ARRAY(DataTypes.STRING),
+    type: DataTypes.ARRAY(DataTypes.TEXT),
     allowNull: false
   },
   // horodatages

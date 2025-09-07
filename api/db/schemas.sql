@@ -10,15 +10,6 @@ DROP TABLE IF EXISTS public.books;
 DROP TABLE IF EXISTS public.testaments;
 DROP TABLE IF EXISTS public.bibles;
 
--- 1. Créer le type ENUM s'il n'existe pas
-DO $$
-BEGIN
-  CREATE TYPE enum_books_testament AS ENUM ('old', 'new');
-EXCEPTION
-  WHEN duplicate_object THEN null;
-END
-$$;
-
 CREATE TABLE bibles (
   code TEXT PRIMARY KEY NOT NULL,
   name TEXT NOT NULL,
@@ -57,6 +48,9 @@ CREATE TABLE books (
   updated_at         TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS uq_books_testament_number
+ON books(testament_id, number);
+
 -- Table des chapitres
 CREATE TABLE chapters (
     id SERIAL PRIMARY KEY,
@@ -82,6 +76,8 @@ CREATE TABLE verses (
   created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at         TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_verse_chapter_number ON verses(chapter_id, number);
 
 -- Table des category_themes
 CREATE TABLE category_themes (
@@ -109,6 +105,16 @@ CREATE TABLE themes (
   UNIQUE(name)
 );
 
+CREATE TABLE verse_themes (
+  verse_id BIGINT REFERENCES verses(id) ON DELETE CASCADE,
+  theme_id INT REFERENCES themes(id) ON DELETE CASCADE,
+
+  -- horodatages
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (verse_id, theme_id)
+);
+
 -- Table des commentaires bibliques
 CREATE TABLE commentaries (
   id           BIGSERIAL PRIMARY KEY,
@@ -118,7 +124,7 @@ CREATE TABLE commentaries (
 
   -- horodatages
   created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at         TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE commentary_verses (
@@ -134,16 +140,6 @@ CREATE TABLE commentary_verses (
 
 CREATE INDEX idx_commentary_verses_commentary ON commentary_verses (commentary_id);
 CREATE INDEX idx_commentary_verses_verse      ON commentary_verses (verse_id);
-CREATE TABLE verse_themes (
-  verse_id BIGINT REFERENCES verses(id) ON DELETE CASCADE,
-  theme_id INT REFERENCES themes(id) ON DELETE CASCADE,
-
-  -- horodatages
-  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
-  PRIMARY KEY (verse_id, theme_id)
-);
-
 -- Index pour /stats/weekly
 CREATE INDEX IF NOT EXISTS idx_med_created_at   ON commentaries (created_at);
 CREATE INDEX IF NOT EXISTS idx_med_approved     ON commentaries (updated_at) WHERE approved = TRUE;

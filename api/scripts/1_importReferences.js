@@ -14,14 +14,16 @@ async function importThemes() {
 
     for (const category of data.categories) {
       await CategoryTheme.findOrCreate({
-        where: { id: category.id, name: category.name.trim(), description: category.description.trim(), keywords: category.keywords.map(k => k.trim()) }
+        where: { id: category.id, name: category.name.trim(),  },
+        defaults: { description: category.description.trim(), keywords: category.keywords.map(k => k.trim()) },
       });
     }
 
     console.log('themes', data.themes)
     for (const theme of data.themes) {
       await Theme.findOrCreate({
-        where: { id: theme.id, categoryId: theme.category_id, name: theme.name.trim(), keywords: theme.keywords.map(k => k.trim()) }
+        where: { id: theme.id, categoryId: theme.category_id, name: theme.name.trim() },
+        defaults: { keywords: theme.keywords.map(k => k.trim()) },
       });
     }
 

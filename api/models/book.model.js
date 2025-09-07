@@ -36,6 +36,9 @@ const Book = sequelize.define("Book", {
 }, {
   tableName: "books",
   timestamps: true,
+    indexes: [
+        { name: "uq_books_testament_number",    unique: true, fields: ["testament_id", "number"] },
+    ],
 });
 
 module.exports = Book;
