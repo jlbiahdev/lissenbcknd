@@ -13,7 +13,7 @@ const sequelize = new Sequelize(
     host: process.env[`DB_HOST${env}`],
     dialect: 'postgres',
     pool: { max: 5, min: 0, idle: 10000, acquire: 60000 },
-    dialectOptions: { statement_timeout: 0, query_timeout: 0 }, // pas de timeout côté PG
+    dialectOptions: { statement_timeout: 60000, query_timeout: 60000 },
     logging: false,
   }
 );

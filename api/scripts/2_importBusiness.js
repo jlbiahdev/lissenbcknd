@@ -251,11 +251,11 @@ async function main() {
     const [, , bibleCode, taxonomyPath, outPath = './mapping.json'] = process.argv;
     const bibleData = loadBibleData(bibleCode);
 
-    // await saveBible(bibleData.bible);
+    await saveBible(bibleData.bible);
     await saveTestaments(bibleData.testaments);
-    // await saveBooks(bibleData.books);
-    // await saveChapters(bibleData.chapters);
-    // await saveVerses(bibleData.verses);
+    await saveBooks(bibleData.books);
+    await saveChapters(bibleData.chapters);
+    await saveVerses(bibleData.verses);
 }
 
 sequelize.sync().then(() => {
