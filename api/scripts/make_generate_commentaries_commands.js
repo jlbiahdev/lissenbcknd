@@ -50,16 +50,16 @@ async function main() {
   }
 
   const outSh  = path.join(process.cwd(), 'scripts/4-commands_generate_commentaries.sh');
-  const outCmd = path.join(process.cwd(), 'scripts/4-commands_generate_commentaries.cmd');
+  // const outCmd = path.join(process.cwd(), 'scripts/4-commands_generate_commentaries.cmd');
 
   fs.writeFileSync(outSh,  shLines.join('\n'), 'utf8');
-  fs.writeFileSync(outCmd, cmdLines.join('\r\n'), 'utf8');
+  // fs.writeFileSync(outCmd, cmdLines.join('\r\n'), 'utf8');
 
   await sequelize.close();
 
   console.log('✅ Fichiers générés:');
   console.log('   -', outSh);
-  console.log('   -', outCmd);
+  // console.log('   -', outCmd);
   console.log(`ℹ️ Délai entre livres: ${DELAY_SEC}s`);
   console.log(`ℹ️ Script ciblé: ${SCRIPT}`);
 }
